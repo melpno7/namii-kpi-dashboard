@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>Na-Mii · KPI Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <style>
@@ -186,16 +189,26 @@
 // SNAPSHOT — refreshed by Step 03 every Monday at 9 AM local
 // Last update: 2026-05-12 (Tuesday)
 // ════════════════════════════════════════════════════════
-const SNAPSHOT_DATE = '2026-05-12';
+const SNAPSHOT_DATE = '2026-05-13';
 
 const CYCLE = {
-  month: 'May–June 2026',
-  focus: 'Brand alignment under launch pressure',
-  anchor: 'Ryyu launch — week of May 11',
+  month: 'May 2026',
+  focus: 'Pre-launch ramp + lead magnet warmup',
+  anchor: 'Brand Alignment Diagnostic ships May 27 · Ryyu beta signup runway',
   start: '2026-05-06',
+  end: '2026-05-31',
+  totalPieces: 30,
+  pillars: { LinkedIn: 12, Instagram: 8, Blog: 4, Email: 3, Newsletter: 2, Other: 1 },
+};
+
+const NEXT_CYCLE = {
+  month: 'June 2026',
+  focus: 'Ryyu launch',
+  anchor: 'Ryyu launch — June 15',
+  start: '2026-06-01',
   end: '2026-06-30',
-  totalPieces: 61,
-  pillars: { LinkedIn: 23, Instagram: 16, Blog: 8, Email: 6, Newsletter: 4, 'Lead Magnet': 1, 'Case Study': 1, Other: 2 },
+  totalPieces: 42,
+  status: 'Awaiting Approval',
 };
 
 const GOALS = [
@@ -293,7 +306,7 @@ const INSIGHTS = [
     severity: 'down', tag: 'LinkedIn',
     title: 'Engagement rate down 42% — but volume is the real story',
     body: 'Rate: <b>6.98%</b> vs April <b>12.1%</b>. The ratio looks bad, but impressions cratered: <b>43 last 7d</b> vs ~511 in April (91% drop). You went dark in early May. The engine stopped — the ratio is fine on tiny volume.',
-    action: 'Restart cadence with the Ryyu launch carousel May 11.',
+    action: 'Ramp LinkedIn cadence now. Every May impression seeds the June 15 Ryyu launch funnel.',
   },
   {
     severity: 'up', tag: 'Blog',
@@ -303,15 +316,15 @@ const INSIGHTS = [
   },
   {
     severity: 'alert', tag: 'Instagram',
-    title: '16 IG pieces planned · 3 reach/week actual',
-    body: 'IG reach: <b>3 last 7d</b>, basically dormant. But the cycle plans <b>16 IG pieces (26% of total effort)</b>. That\'s real production time going into a channel returning near-zero.',
-    action: 'Decide this week: revival sprint (≥5 pieces in 7 days) or kill IG from the cycle plan.',
+    title: '8 IG pieces planned this month · 3 reach/week actual',
+    body: 'IG reach: <b>3 last 7d</b>, basically dormant. But May plans <b>8 IG pieces (27% of monthly effort)</b>, plus another 8 in June. That\'s real production time going into a channel returning near-zero.',
+    action: 'Decide this week: revival sprint (≥5 pieces in 7 days) or pull IG from May and redistribute the production hours.',
   },
   {
     severity: 'flat', tag: 'Sales',
-    title: 'Target = 25% of April\'s actual pace',
-    body: 'April booked <b>8 strategy calls</b> at ~2/wk. Cycle target is <b>10 across 8 weeks</b> = 1.25/wk. Either the bar is too low, or April was a fluke.',
-    action: 'Calendly is now connected — re-run Step 03 to pull live numbers and revisit the target.',
+    title: 'May target ≈ half of April\'s pace',
+    body: 'April booked <b>8 strategy calls</b> at ~2/wk. May target is <b>4 calls</b> = 1/wk, which fits the pre-launch ramp (fewer net-new conversations expected before Ryyu ships June 15). Calendly MCP is now connected — next sync pulls live numbers.',
+    action: 'Watch Week 3 (May 18–24): if calls trending below 1/wk, push founder LinkedIn cadence ahead of the May 27 Diagnostic ship.',
   },
   {
     severity: 'down', tag: 'Data',
@@ -321,9 +334,9 @@ const INSIGHTS = [
   },
   {
     severity: 'flat', tag: 'Mix',
-    title: 'LinkedIn = 38% of effort. Blog = 13% but driving real traffic.',
-    body: 'Mix: <b>23 LinkedIn</b>, <b>16 IG</b>, <b>8 Blog</b>, <b>6 Email</b>, <b>4 Newsletter</b>. Blog at 13% of effort producing ~206 sessions/mo. LinkedIn at 38% of effort producing 43 impressions/wk. Blog ROI per piece is materially higher right now.',
-    action: 'Test rebalancing — pull 4-6 IG pieces into Blog repurposing.',
+    title: 'LinkedIn = 40% of May. Blog = 13% but driving real traffic.',
+    body: 'May mix: <b>12 LinkedIn</b>, <b>8 IG</b>, <b>4 Blog</b>, <b>3 Email</b>, <b>2 Newsletter</b>. Blog at 13% of effort is producing ~206 sessions/mo. LinkedIn at 40% of effort is producing 43 impressions/wk. Blog ROI per piece is materially higher right now.',
+    action: 'Test rebalancing — pull 2-3 IG pieces into Blog repurposing for May.',
   },
 ];
 
