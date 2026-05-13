@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Na-Mii · KPI Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fafaf7;
+    --paper: #ffffff;
+    --surface: #f5f5f1;
+    --ink: #0a0a0a;
+    --ink-2: #2a2a2a;
+    --muted: #6b6b66;
+    --line: #e8e8e2;
+    --accent: #1d3557;
+    --accent-soft: #e5edf5;
+    --green: #15803d;
+    --green-soft: #dcfce7;
+    --amber: #b45309;
+    --amber-soft: #fef3c7;
+    --red: #b91c1c;
+    --red-soft: #fee2e2;
+    --gray: #64748b;
+    --gray-soft: #f1f5f9;
+    --serif: ui-serif, "Charter", "Iowan Old Style", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 32px 64px; }
+
+  /* SYNC BANNER */
+  .sync-banner { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 18px; margin-bottom: 14px; font-size: 12.5px; font-family: var(--mono); color: var(--ink-2); flex-wrap: wrap; }
+  .sync-banner b { color: var(--ink); font-weight: 700; }
+  .sync-left { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
+  .sync-pulse { display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-right: 6px; vertical-align: middle; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .sync-cta { color: var(--accent); font-weight: 600; }
+
+  /* HERO */
+  .hero { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 30px 36px; margin-bottom: 20px; display: grid; grid-template-columns: 1fr auto; gap: 36px; align-items: center; }
+  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; padding: 24px; } }
+  .hero-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .hero-title { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 8px; }
+  @media (max-width: 720px) { .hero-title { font-size: 34px; } }
+  .hero-focus { font-family: var(--serif); font-style: italic; font-size: 17px; color: var(--ink-2); margin-bottom: 16px; }
+  .hero-anchor { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--accent-soft); color: var(--accent); border-radius: 99px; font-size: 12px; font-weight: 600; }
+  .hero-timeline { margin-top: 20px; }
+  .hero-timeline-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 8px; font-family: var(--mono); }
+  .hero-timeline-bar { position: relative; height: 6px; background: var(--surface); border-radius: 99px; }
+  .hero-timeline-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #2563eb); border-radius: 99px; }
+  .hero-timeline-marker { position: absolute; top: -4px; width: 14px; height: 14px; background: var(--paper); border: 3px solid var(--accent); border-radius: 50%; transform: translateX(-50%); }
+  .hero-right { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 200px; }
+  .donut-wrap { position: relative; width: 170px; height: 170px; }
+  .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .donut-pct { font-family: var(--serif); font-size: 44px; font-weight: 600; line-height: 1; }
+  .donut-label { font-size: 11px; font-family: var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+  .donut-meta { font-size: 13px; color: var(--ink-2); text-align: center; }
+  .donut-meta b { color: var(--ink); }
+
+  /* SECTIONS */
+  .section { margin-bottom: 32px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; gap: 16px; }
+  .section-title { font-family: var(--serif); font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+  .section-sub { font-size: 12.5px; color: var(--muted); }
+  .section-sub b { color: var(--ink-2); }
+
+  /* INSIGHTS */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .insights-grid { grid-template-columns: 1fr; } }
+  .insight { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--gray); border-radius: 12px; padding: 18px 22px; }
+  .insight.up { border-left-color: var(--green); }
+  .insight.down { border-left-color: var(--red); }
+  .insight.alert { border-left-color: var(--amber); }
+  .insight.flat { border-left-color: var(--accent); }
+  .insight-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .insight-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+  .insight.up .insight-tag { background: var(--green-soft); color: var(--green); }
+  .insight.down .insight-tag { background: var(--red-soft); color: var(--red); }
+  .insight.alert .insight-tag { background: var(--amber-soft); color: var(--amber); }
+  .insight.flat .insight-tag { background: var(--accent-soft); color: var(--accent); }
+  .insight-title { font-family: var(--serif); font-size: 16px; font-weight: 600; color: var(--ink); margin: 0; line-height: 1.25; }
+  .insight-body { font-size: 13px; color: var(--ink-2); line-height: 1.5; margin: 0 0 8px; }
+  .insight-body b { color: var(--ink); font-weight: 600; }
+  .insight-action { font-size: 12px; color: var(--accent); font-weight: 600; padding-top: 8px; border-top: 1px dashed var(--line); }
+
+  /* GOAL CARDS */
+  .goals-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  @media (max-width: 1100px) { .goals-row { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 720px) { .goals-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .goals-row { grid-template-columns: 1fr; } }
+  .goal-card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 20px; position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; min-height: 235px; }
+  .goal-stripe { position: absolute; top: 0; left: 0; right: 0; height: 4px; }
+  .stripe-on { background: var(--green); } .stripe-risk { background: var(--amber); } .stripe-off { background: var(--red); } .stripe-pending { background: var(--gray); }
+  .goal-head { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 4px; }
+  .goal-icon { font-size: 22px; }
+  .goal-pill { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .pill-on { background: var(--green-soft); color: var(--green); }
+  .pill-risk { background: var(--amber-soft); color: var(--amber); }
+  .pill-off { background: var(--red-soft); color: var(--red); }
+  .pill-pending { background: var(--gray-soft); color: var(--gray); }
+  .goal-name { font-family: var(--serif); font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--ink-2); min-height: 36px; }
+  .goal-big { display: flex; align-items: baseline; gap: 6px; margin-top: auto; }
+  .goal-big-num { font-family: var(--serif); font-size: 54px; font-weight: 600; line-height: 0.9; letter-spacing: -0.04em; }
+  .goal-big-target { font-size: 15px; color: var(--muted); font-weight: 500; }
+  .goal-progress { display: flex; align-items: center; gap: 10px; }
+  .goal-progress-bar { flex: 1; height: 6px; background: var(--surface); border-radius: 99px; overflow: hidden; }
+  .goal-progress-fill { height: 100%; border-radius: 99px; }
+  .goal-progress-pct { font-size: 11px; font-family: var(--mono); color: var(--muted); font-weight: 600; }
+  .goal-projection { font-size: 10.5px; color: var(--muted); margin-top: 4px; font-family: var(--mono); }
+
+  /* DAILY PULSE */
+  .pulse-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .pulse-grid { grid-template-columns: 1fr; } }
+  .pulse-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .pulse-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .pulse-name { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .pulse-sum { font-family: var(--serif); font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+  .pulse-chart { height: 80px; position: relative; }
+
+  /* METRICS */
+  .metrics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 900px) { .metrics-grid { grid-template-columns: 1fr; } }
+  .metric-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px 22px; }
+  .metric-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 12px; }
+  .metric-name { font-family: var(--serif); font-size: 15px; font-weight: 600; margin: 0; }
+  .metric-sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+  .metric-now { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .metric-val { font-family: var(--serif); font-size: 34px; font-weight: 600; line-height: 1; letter-spacing: -0.03em; }
+  .metric-unit { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .metric-delta { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+  .delta-up { background: var(--green-soft); color: var(--green); }
+  .delta-down { background: var(--red-soft); color: var(--red); }
+  .delta-flat { background: var(--gray-soft); color: var(--gray); }
+  .metric-context { font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
+  .metric-chart-wrap { position: relative; height: 80px; }
+  .metric-foot { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 6px; font-family: var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
+  .metric-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px; }
+
+  /* COMPOSITION */
+  .comp-wrap { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: center; }
+  @media (max-width: 720px) { .comp-wrap { grid-template-columns: 1fr; } }
+  .comp-chart-wrap { position: relative; height: 220px; }
+  .comp-list { display: flex; flex-direction: column; gap: 8px; }
+  .comp-row { display: grid; grid-template-columns: 16px 1fr auto auto; gap: 10px; align-items: center; font-size: 13px; }
+  .comp-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .comp-label { font-weight: 500; color: var(--ink-2); }
+  .comp-count { font-family: var(--mono); color: var(--muted); }
+  .comp-roi { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+  .roi-good { background: var(--green-soft); color: var(--green); }
+  .roi-bad { background: var(--red-soft); color: var(--red); }
+  .roi-neutral { background: var(--gray-soft); color: var(--gray); }
+
+  /* RECENT */
+  .entries-wrap { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .entries-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .entries-table th { text-align: left; padding: 12px 18px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; background: var(--surface); font-family: var(--mono); }
+  .entries-table td { padding: 12px 18px; border-top: 1px solid var(--line); }
+  .entries-table tr:hover td { background: var(--surface); }
+  .entries-table .num { font-family: var(--mono); font-weight: 600; text-align: right; }
+  .entries-table .channel { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--mono); }
+
+  /* CONNECTORS */
+  .connectors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  @media (max-width: 900px) { .connectors { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 480px) { .connectors { grid-template-columns: repeat(2, 1fr); } }
+  .conn { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; transition: border-color 0.15s, background 0.15s; }
+  .conn:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .conn-icon { font-size: 20px; }
+  .conn-name { font-weight: 700; font-size: 13px; }
+  .conn-note { font-size: 11px; color: var(--muted); }
+
+  .footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); gap: 12px; flex-wrap: wrap; font-family: var(--mono); }
+  .footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// SNAPSHOT — refreshed by Step 03 every Monday at 9 AM local
+// Last update: 2026-05-12 (Tuesday)
+// ════════════════════════════════════════════════════════
+const SNAPSHOT_DATE = '2026-05-12';
+
+const CYCLE = {
+  month: 'May–June 2026',
+  focus: 'Brand alignment under launch pressure',
+  anchor: 'Ryyu launch — week of May 11',
+  start: '2026-05-06',
+  end: '2026-06-30',
+  totalPieces: 61,
+  pillars: { LinkedIn: 23, Instagram: 16, Blog: 8, Email: 6, Newsletter: 4, 'Lead Magnet': 1, 'Case Study': 1, Other: 2 },
+};
+
+const GOALS = [
+  { icon: '📞', short: 'Strategy Calls',    title: 'Book 4 inbound strategy calls',                target: 4,  unit: 'calls',    actual: 0,    status: 'Pending', auto: 'auto',    note: 'Calendly now connected. Re-sync to pull live.' },
+  { icon: '🎤', short: 'Voice Convos',      title: 'Generate 2 Ryyu Voice conversations',          target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', auto: 'split',   note: 'ICP: Founders/CEOs at Series A–C' },
+  { icon: '⚙️', short: 'Engine Convos',     title: 'Generate 2 Ryyu Engine conversations',         target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', auto: 'split',   note: 'ICP: CMOs at Series A–C' },
+  { icon: '📰', short: 'GEO/AEO Articles',  title: 'Publish 4 GEO/AEO-optimised articles',         target: 4,  unit: 'articles',actual: 0,    status: 'Pending', auto: 'manual',  note: 'Manual count weekly. 8 blogs planned cycle-wide.' },
+  { icon: '📧', short: 'Newsletter Open',   title: '35%+ newsletter open rate',                    target: 35, unit: '%',       actual: null, status: 'Pending', auto: 'auto',    note: 'First send June 11.' },
+];
+
+const METRICS = [
+  { name: 'Strategy Calls Booked',                  unit: '',         apr: 8,    now: 0,    target: 10,  channel: 'Sales' },
+  { name: 'Content-Attributed Conversations',       unit: '',         apr: null, now: 0,    target: 4,   channel: 'Overall' },
+  { name: 'LinkedIn ICP Engagement Rate',           unit: '%',        apr: 12.1, now: 6.98, target: 15,  channel: 'LinkedIn' },
+  { name: 'Newsletter Open Rate',                   unit: '%',        apr: null, now: null, target: 35,  channel: 'Email' },
+  { name: 'Email Click Rate',                       unit: '%',        apr: null, now: null, target: 8,   channel: 'Email' },
+  { name: 'Lead Magnet Downloads',                  unit: '',         apr: 0,    now: 0,    target: 50,  channel: 'Lead Magnet' },
+  { name: 'Blog Sessions',                          unit: 'sessions', apr: 180,  now: 48,   target: null, channel: 'Blog' },
+  { name: 'Instagram Reach',                        unit: '',         apr: 3,    now: 3,    target: null, channel: 'Instagram' },
+  { name: 'Instagram Saves',                        unit: '',         apr: 0,    now: 0,    target: null, channel: 'Instagram' },
+  { name: 'Sales Cycle Length',                     unit: 'days',     apr: 0,    now: 0,    target: 30,  channel: 'Sales' },
+  { name: 'Conversion Rate (Content → Conversation)', unit: '%',      apr: null, now: null, target: null, channel: 'Overall' },
+];
+
+// Daily Windsor pulls — May 4-10
+const DAILY = {
+  linkedin: [
+    { date: 'May 4', value: 3 },
+    { date: 'May 5', value: 10 },
+    { date: 'May 6', value: 0 },
+    { date: 'May 7', value: 0 },
+    { date: 'May 8', value: 8 },
+    { date: 'May 9', value: 14 },
+    { date: 'May 10', value: 8 },
+  ],
+  ga4: [
+    { date: 'May 4', value: 8 },
+    { date: 'May 5', value: 2 },
+    { date: 'May 6', value: 4 },
+    { date: 'May 7', value: 10 },
+    { date: 'May 8', value: 13 },
+    { date: 'May 9', value: 9 },
+    { date: 'May 10', value: 2 },
+  ],
+  instagram: [
+    { date: 'May 4', value: 1 },
+    { date: 'May 5', value: 1 },
+    { date: 'May 6', value: 0 },
+    { date: 'May 7', value: 0 },
+    { date: 'May 8', value: 0 },
+    { date: 'May 9', value: 1 },
+    { date: 'May 10', value: 0 },
+  ],
+};
+
+const RECENT_ENTRIES = [
+  { period: '2026-05-03', metric: 'LinkedIn ICP Engagement Rate', channel: 'LinkedIn',    value: '6.98%',  note: 'Windsor linkedin_organic. 43 impressions, 3 clicks.' },
+  { period: '2026-05-03', metric: 'Blog Sessions',                channel: 'Blog',        value: '48',     note: 'Windsor GA4. May 8 spike (13).' },
+  { period: '2026-05-03', metric: 'Instagram Reach',              channel: 'Instagram',   value: '3',      note: 'Account near-dormant — same as April.' },
+  { period: '2026-05-03', metric: 'Instagram Saves',              channel: 'Instagram',   value: '0',      note: 'No saves.' },
+  { period: '2026-05-03', metric: 'Sales Cycle Length',           channel: 'Sales',       value: '0 d',    note: '0 closed-won deals matched. Insufficient volume.' },
+  { period: '2026-05-03', metric: 'Lead Magnet Downloads',        channel: 'Lead Magnet', value: '0',      note: 'Pre-launch. Brand Alignment Diagnostic ships June 10.' },
+  { period: '2026-04-26', metric: 'Blog Sessions',                channel: 'Blog',        value: '38',     note: 'GA4 last 7 days. ~5/day avg.' },
+  { period: '2026-04-26', metric: 'Instagram Reach',              channel: 'Instagram',   value: '0',      note: 'Account fully dormant.' },
+  { period: '2026-04-01', metric: 'LinkedIn ICP Engagement Rate', channel: 'LinkedIn',    value: '12.1%',  note: 'April baseline. 62 interactions / 511 impressions.' },
+  { period: '2026-04-01', metric: 'Strategy Calls Booked',        channel: 'Sales',       value: '8',      note: 'April baseline. 8 Calendly events.' },
+];
+
+const PILLAR_COLORS = {
+  LinkedIn: '#7c3aed', Instagram: '#db2777', Blog: '#1d3557', Email: '#c2410c',
+  Newsletter: '#d97706', 'Lead Magnet': '#15803d', 'Case Study': '#0891b2', Other: '#64748b',
+};
+
+const CHANNEL_COLORS = {
+  LinkedIn: { bg: '#ede9fe', fg: '#6d28d9' },
+  Blog:     { bg: '#e5edf5', fg: '#1d3557' },
+  Email:    { bg: '#ffedd5', fg: '#c2410c' },
+  Instagram:{ bg: '#fce7f3', fg: '#be185d' },
+  'Lead Magnet': { bg: '#dcfce7', fg: '#15803d' },
+  Sales:    { bg: '#fee2e2', fg: '#b91c1c' },
+  Overall:  { bg: '#f1f5f9', fg: '#64748b' },
+};
+
+const CONNECTORS = [
+  { icon: '💼', name: 'LinkedIn',    note: 'Engagement',     href: 'https://www.linkedin.com/analytics/' },
+  { icon: '📸', name: 'Instagram',   note: 'Reach + saves',  href: 'https://www.instagram.com/business/' },
+  { icon: '📈', name: 'GA4',         note: 'Blog sessions',  href: 'https://analytics.google.com/' },
+  { icon: '🎯', name: 'HubSpot',     note: 'Deals + leads',  href: 'https://app.hubspot.com/' },
+  { icon: '📅', name: 'Calendly',    note: 'Strategy calls', href: 'https://calendly.com/event_types/user/me' },
+  { icon: '✍️', name: 'KPI Tracker', note: 'Log manually',   href: 'https://www.notion.so/71052c30eae94e6c85d168b3b70121ee' },
+];
+
+const INSIGHTS = [
+  {
+    severity: 'down', tag: 'LinkedIn',
+    title: 'Engagement rate down 42% — but volume is the real story',
+    body: 'Rate: <b>6.98%</b> vs April <b>12.1%</b>. The ratio looks bad, but impressions cratered: <b>43 last 7d</b> vs ~511 in April (91% drop). You went dark in early May. The engine stopped — the ratio is fine on tiny volume.',
+    action: 'Restart cadence with the Ryyu launch carousel May 11.',
+  },
+  {
+    severity: 'up', tag: 'Blog',
+    title: 'Sessions on pace to beat April by 14%',
+    body: '<b>48 sessions</b> last 7d → ~<b>206/mo</b> pace vs April baseline <b>180/mo</b>. The May 8 spike (13 sessions) had no scheduled publish — find the referral source.',
+    action: 'Check GA4 source/medium for May 8 traffic.',
+  },
+  {
+    severity: 'alert', tag: 'Instagram',
+    title: '16 IG pieces planned · 3 reach/week actual',
+    body: 'IG reach: <b>3 last 7d</b>, basically dormant. But the cycle plans <b>16 IG pieces (26% of total effort)</b>. That\'s real production time going into a channel returning near-zero.',
+    action: 'Decide this week: revival sprint (≥5 pieces in 7 days) or kill IG from the cycle plan.',
+  },
+  {
+    severity: 'flat', tag: 'Sales',
+    title: 'Target = 25% of April\'s actual pace',
+    body: 'April booked <b>8 strategy calls</b> at ~2/wk. Cycle target is <b>10 across 8 weeks</b> = 1.25/wk. Either the bar is too low, or April was a fluke.',
+    action: 'Calendly is now connected — re-run Step 03 to pull live numbers and revisit the target.',
+  },
+  {
+    severity: 'down', tag: 'Data',
+    title: 'Sales Cycle Length is unmeasurable',
+    body: 'Only 2 deals in HubSpot for 2026, both with close_date BEFORE create_date — backfilled historical data, not live tracking. <b>You can\'t compute median sales cycle on this</b>. Going to read 0 every week.',
+    action: 'Fix HubSpot deal-stage tracking or remove this from the scorecard.',
+  },
+  {
+    severity: 'flat', tag: 'Mix',
+    title: 'LinkedIn = 38% of effort. Blog = 13% but driving real traffic.',
+    body: 'Mix: <b>23 LinkedIn</b>, <b>16 IG</b>, <b>8 Blog</b>, <b>6 Email</b>, <b>4 Newsletter</b>. Blog at 13% of effort producing ~206 sessions/mo. LinkedIn at 38% of effort producing 43 impressions/wk. Blog ROI per piece is materially higher right now.',
+    action: 'Test rebalancing — pull 4-6 IG pieces into Blog repurposing.',
+  },
+];
+
+const STYLE = {
+  'On Track':  { stripe: 'stripe-on', pill: 'pill-on', color: '#15803d' },
+  'At Risk':   { stripe: 'stripe-risk', pill: 'pill-risk', color: '#b45309' },
+  'Off Track': { stripe: 'stripe-off', pill: 'pill-off', color: '#b91c1c' },
+  'Pending':   { stripe: 'stripe-pending', pill: 'pill-pending', color: '#64748b' },
+};
+
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif";
+Chart.defaults.color = '#6b6b66';
+
+// ──────────────────────────────────────────────────────────
+const sum = a => a.reduce((x, y) => x + y, 0);
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+const escapeHtml = s => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function fmt(n, unit) {
+  if (n == null || isNaN(n)) return '—';
+  if (unit === '%') return n.toFixed(1);
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(1);
+}
+
+function nextMonday9am(now) {
+  const d = new Date(now);
+  const day = d.getDay();
+  let ahead = (8 - day) % 7;
+  if (ahead === 0) ahead = d.getHours() < 9 ? 0 : 7;
+  d.setDate(d.getDate() + ahead);
+  d.setHours(9, 0, 0, 0);
+  return d;
+}
+function fmtSyncDate(d) {
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function relativeAge(snapshot) {
+  const diff = Math.floor((new Date() - new Date(snapshot)) / 3600000);
+  if (diff < 1) return 'just now';
+  if (diff < 24) return diff + 'h ago';
+  const days = Math.floor(diff / 24);
+  return days + 'd ago · ' + fmtSyncDate(new Date(snapshot));
+}
+
+function render() {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const totalDays = daysBetween(CYCLE.start, CYCLE.end) + 1;
+  const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(CYCLE.start, today) + 1));
+  const elapsedPct = Math.max(0, Math.min(1, elapsedDays / totalDays));
+  const nextSync = nextMonday9am(now);
+  const lastSyncLabel = relativeAge(SNAPSHOT_DATE);
+  const nextSyncLabel = fmtSyncDate(nextSync) + ' · 9:00 AM';
+
+  // Status counts
+  const counts = { 'On Track': 0, 'At Risk': 0, 'Off Track': 0, 'Pending': 0 };
+  GOALS.forEach(g => counts[g.status]++);
+
+  const totalPlanned = sum(Object.values(CYCLE.pillars));
+
+  return `
+    <div class="sync-banner">
+      <div class="sync-left">
+        <span><span class="sync-pulse"></span><b>Last sync:</b> ${escapeHtml(lastSyncLabel)}</span>
+        <span><b>Next auto-sync:</b> ${escapeHtml(nextSyncLabel)} local</span>
+      </div>
+      <span class="sync-cta">Say "run Step 03" to refresh</span>
+    </div>
+
+    <div class="hero">
+      <div>
+        <div class="hero-eyebrow">Current Cycle</div>
+        <h1 class="hero-title">${escapeHtml(CYCLE.month)}</h1>
+        <div class="hero-focus">${escapeHtml(CYCLE.focus)}</div>
+        <span class="hero-anchor">⚡ ${escapeHtml(CYCLE.anchor)}</span>
+        <div class="hero-timeline">
+          <div class="hero-timeline-meta">
+            <span>${escapeHtml(CYCLE.start)}</span>
+            <span>Today · Day ${elapsedDays} of ${totalDays}</span>
+            <span>${escapeHtml(CYCLE.end)}</span>
+          </div>
+          <div class="hero-timeline-bar">
+            <div class="hero-timeline-fill" style="width: ${(elapsedPct * 100).toFixed(1)}%"></div>
+            <div class="hero-timeline-marker" style="left: ${(elapsedPct * 100).toFixed(1)}%"></div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="donut-wrap">
+          <canvas id="cycle-donut"></canvas>
+          <div class="donut-center">
+            <div class="donut-pct">${Math.round(elapsedPct * 100)}%</div>
+            <div class="donut-label">elapsed</div>
+          </div>
+        </div>
+        <div class="donut-meta"><b>${totalDays - elapsedDays} days</b> remaining · <b>${CYCLE.totalPieces}</b> pieces</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">Insights</h2>
+        <div class="section-sub">What the data is telling me, right now</div>
+      </div>
+      <div class="insights-grid">
+        ${INSIGHTS.map(i => `
+          <div class="insight ${i.severity}">
+            <div class="insight-head">
+              <span class="insight-tag">${escapeHtml(i.tag)}</span>
+              <h3 class="insight-title">${escapeHtml(i.title)}</h3>
+            </div>
+            <p class="insight-body">${i.body}</p>
+            <div class="insight-action">→ ${escapeHtml(i.action)}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">The 5 Goals</h2>
+        <div class="section-sub">
+          <b>${counts['On Track']}</b> on track ·
+          <b>${counts['At Risk']}</b> at risk ·
+          <b>${counts['Off Track']}</b> off track ·
+          <b>${counts['Pending']}</b> pending
+        </div>
+      </div>
+      <div class="goals-row">
+        ${GOALS.map(g => renderGoal(g, elapsedPct)).join('')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">This Week's Daily Pulse</h2>
+        <div class="section-sub">May 4 – May 10 from Windsor</div>
+      </div>
+      <div class="pulse-grid">
+        ${renderPulse('LinkedIn impressions', DAILY.linkedin, '#7c3aed', 'pulse-li')}
+        ${renderPulse('Blog Sessions', DAILY.ga4, '#1d3557', 'pulse-ga4')}
+        ${renderPulse('Instagram Reach', DAILY.instagram, '#db2777', 'pulse-ig')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">All Metrics</h2>
+        <div class="section-sub">April baseline vs this cycle vs target</div>
+      </div>
+      <div class="metrics-grid">
+        ${METRICS.map((m, i) => renderMetric(m, i)).join('')}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">Cycle Composition</h2>
+        <div class="section-sub">${totalPlanned} planned pieces by channel</div>
+      </div>
+      <div class="comp-wrap">
+        <div class="comp-chart-wrap"><canvas id="comp-chart"></canvas></div>
+        <div class="comp-list">
+          ${Object.entries(CYCLE.pillars).filter(([n, c]) => c > 0).map(([n, c]) => {
+            const pct = Math.round((c / totalPlanned) * 100);
+            const roi = n === 'Instagram' ? 'roi-bad' : (n === 'Blog' ? 'roi-good' : 'roi-neutral');
+            const roiLabel = n === 'Instagram' ? 'low ROI' : (n === 'Blog' ? 'high ROI' : '—');
+            return `
+              <div class="comp-row">
+                <span class="comp-dot" style="background: ${PILLAR_COLORS[n] || '#64748b'};"></span>
+                <span class="comp-label">${escapeHtml(n)}</span>
+                <span class="comp-count">${c} pcs · ${pct}%</span>
+                <span class="comp-roi ${roi}">${roiLabel}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">Recent KPI Entries</h2>
+        <div class="section-sub">Last ${RECENT_ENTRIES.length} rows logged · newest first</div>
+      </div>
+      <div class="entries-wrap">
+        <table class="entries-table">
+          <thead><tr><th>Period</th><th>Metric</th><th>Channel</th><th class="num">Value</th><th>Note</th></tr></thead>
+          <tbody>
+            ${RECENT_ENTRIES.map(r => {
+              const c = CHANNEL_COLORS[r.channel] || CHANNEL_COLORS.Overall;
+              return `
+                <tr>
+                  <td style="font-family: var(--mono); font-size: 12px;">${escapeHtml(r.period)}</td>
+                  <td><b>${escapeHtml(r.metric)}</b></td>
+                  <td><span class="channel" style="background:${c.bg};color:${c.fg};">${escapeHtml(r.channel)}</span></td>
+                  <td class="num">${escapeHtml(r.value)}</td>
+                  <td style="font-size: 12px; color: var(--muted); max-width: 360px;">${escapeHtml(r.note)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2 class="section-title">Log this week</h2>
+      </div>
+      <div class="connectors">
+        ${CONNECTORS.map(c => `
+          <a class="conn" href="${c.href}" target="_blank" rel="noopener">
+            <span class="conn-icon">${c.icon}</span>
+            <div class="conn-name">${escapeHtml(c.name)}</div>
+            <div class="conn-note">${escapeHtml(c.note)}</div>
+          </a>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>
+        <a href="https://www.notion.so/35cdb721e443812bb8d3c27589fe3c2d" target="_blank">Notion KPI Dashboard</a> ·
+        <a href="https://www.notion.so/988401501f9746f0bed594eb3c180a32" target="_blank">Cycle Goals</a> ·
+        <a href="https://www.notion.so/71052c30eae94e6c85d168b3b70121ee" target="_blank">KPI Tracker</a>
+      </div>
+      <div>Snapshot: ${SNAPSHOT_DATE} · Refreshed by Step 03</div>
+    </div>
+  `;
+}
+
+function renderGoal(g, elapsedPct) {
+  const style = STYLE[g.status];
+  const pct = (g.target && g.actual != null) ? Math.min(100, (g.actual / g.target) * 100) : 0;
+  const display = g.actual == null ? '—' : (g.unit === '%' ? g.actual + '%' : g.actual);
+  let projection = '';
+  if (g.actual != null && g.target != null && elapsedPct > 0.05 && g.actual > 0) {
+    const projected = g.actual / elapsedPct;
+    projection = `Pace: ${projected.toFixed(0)} (${Math.round((projected / g.target) * 100)}% of target)`;
+  } else if (g.actual === 0 && elapsedPct > 0.05) {
+    projection = `${Math.round((1 - elapsedPct) * 100)}% time left`;
+  } else {
+    projection = g.note || '';
+  }
+  return `
+    <div class="goal-card">
+      <div class="goal-stripe ${style.stripe}"></div>
+      <div class="goal-head">
+        <span class="goal-icon">${g.icon}</span>
+        <span class="goal-pill ${style.pill}">${g.status}</span>
+      </div>
+      <div class="goal-name">${escapeHtml(g.short)}</div>
+      <div class="goal-big">
+        <span class="goal-big-num">${display}</span>
+        <span class="goal-big-target">of ${g.target}${g.unit === '%' ? '%' : ' ' + g.unit}</span>
+      </div>
+      <div class="goal-progress">
+        <div class="goal-progress-bar"><div class="goal-progress-fill" style="width: ${pct}%; background: ${style.color};"></div></div>
+        <div class="goal-progress-pct">${Math.round(pct)}%</div>
+      </div>
+      <div class="goal-projection">${escapeHtml(projection)}</div>
+    </div>
+  `;
+}
+
+function renderMetric(m, idx) {
+  let delta = '';
+  if (m.apr != null && m.now != null) {
+    const diff = m.now - m.apr;
+    if (Math.abs(diff) > 0.05) {
+      const cls = diff > 0 ? 'delta-up' : 'delta-down';
+      delta = `<span class="metric-delta ${cls}">${diff > 0 ? '↑' : '↓'} ${fmt(Math.abs(diff), m.unit)}${m.unit === '%' ? 'pp' : ''}</span>`;
+    } else {
+      delta = `<span class="metric-delta delta-flat">= vs Apr</span>`;
+    }
+  } else if (m.now == null) {
+    delta = `<span class="metric-delta delta-flat">no data</span>`;
+  }
+  const sub = m.apr != null ? `Apr baseline: ${fmt(m.apr, m.unit)}${m.unit === '%' ? '%' : ''}` : 'No baseline';
+
+  return `
+    <div class="metric-card">
+      <div class="metric-head">
+        <div><h3 class="metric-name">${escapeHtml(m.name)}</h3><div class="metric-sub">${escapeHtml(sub)}</div></div>
+        ${delta}
+      </div>
+      <div class="metric-now">
+        <span class="metric-val">${fmt(m.now, m.unit)}${m.unit === '%' ? '%' : ''}</span>
+        <span class="metric-unit">${m.unit && m.unit !== '%' ? m.unit : (m.now != null ? 'this cycle' : '')}</span>
+      </div>
+      <div class="metric-context">Target: <b style="color: var(--ink-2);">${fmt(m.target, m.unit)}${m.unit === '%' ? '%' : (m.target && m.unit ? ' ' + m.unit : '')}</b></div>
+      <div class="metric-chart-wrap"><canvas id="mc-${idx}" data-baseline="${m.apr ?? ''}" data-current="${m.now ?? ''}" data-target="${m.target ?? ''}" data-unit="${m.unit}"></canvas></div>
+      <div class="metric-foot"><span>Apr</span><span>Now</span><span>Target</span></div>
+    </div>
+  `;
+}
+
+function renderPulse(name, daily, color, id) {
+  const total = sum(daily.map(d => d.value));
+  return `
+    <div class="pulse-card">
+      <div class="pulse-head"><div class="pulse-name">${escapeHtml(name)}</div><div class="pulse-sum">${total}</div></div>
+      <div class="pulse-chart"><canvas id="${id}" data-color="${color}"></canvas></div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────────────────
+function drawCharts(elapsedPct) {
+  // Cycle donut
+  const donut = document.getElementById('cycle-donut');
+  if (donut) new Chart(donut, {
+    type: 'doughnut',
+    data: { datasets: [{ data: [elapsedPct * 100, (1 - elapsedPct) * 100], backgroundColor: ['#1d3557', '#f5f5f1'], borderWidth: 0 }] },
+    options: { cutout: '74%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+  });
+
+  // Metric bars
+  document.querySelectorAll('canvas[id^="mc-"]').forEach(canvas => {
+    const b = parseFloat(canvas.dataset.baseline);
+    const c = parseFloat(canvas.dataset.current);
+    const t = parseFloat(canvas.dataset.target);
+    const unit = canvas.dataset.unit;
+    const data = [isNaN(b)?0:b, isNaN(c)?0:c, isNaN(t)?0:t];
+    if (!data.some(v => v > 0)) {
+      canvas.parentElement.innerHTML = '<div class="metric-empty">No data yet</div>';
+      return;
+    }
+    new Chart(canvas, {
+      type: 'bar',
+      data: { labels: ['Apr', 'Now', 'Target'], datasets: [{ data, backgroundColor: ['#94a3b8', '#1d3557', '#cbd5e1'], borderRadius: 5, barThickness: 18 }] },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.x + (unit === '%' ? '%' : '') } } },
+        scales: { x: { display: false, grid: { display: false } }, y: { grid: { display: false }, ticks: { font: { size: 10, weight: 600 } } } }
+      }
+    });
+  });
+
+  // Daily sparklines
+  [
+    { id: 'pulse-li',  data: DAILY.linkedin,  color: '#7c3aed' },
+    { id: 'pulse-ga4', data: DAILY.ga4,       color: '#1d3557' },
+    { id: 'pulse-ig',  data: DAILY.instagram, color: '#db2777' },
+  ].forEach(p => {
+    const c = document.getElementById(p.id);
+    if (!c) return;
+    new Chart(c, {
+      type: 'line',
+      data: {
+        labels: p.data.map(d => d.date),
+        datasets: [{
+          data: p.data.map(d => d.value),
+          borderColor: p.color, backgroundColor: p.color + '22',
+          fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: p.color, borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+        scales: { x: { ticks: { font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { font: { size: 9 } }, grid: { color: '#f0f0eb' } } }
+      }
+    });
+  });
+
+  // Composition donut
+  const comp = document.getElementById('comp-chart');
+  if (comp) {
+    const entries = Object.entries(CYCLE.pillars).filter(([n, c]) => c > 0);
+    new Chart(comp, {
+      type: 'doughnut',
+      data: {
+        labels: entries.map(e => e[0]),
+        datasets: [{ data: entries.map(e => e[1]), backgroundColor: entries.map(e => PILLAR_COLORS[e[0]] || '#64748b'), borderWidth: 2, borderColor: '#ffffff' }]
+      },
+      options: { cutout: '60%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' pieces' } } } }
+    });
+  }
+}
+
+// ──────────────────────────────────────────────────────────
+function main() {
+  const today = new Date().toISOString().slice(0, 10);
+  const totalDays = daysBetween(CYCLE.start, CYCLE.end) + 1;
+  const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(CYCLE.start, today) + 1));
+  const elapsedPct = Math.max(0, Math.min(1, elapsedDays / totalDays));
+
+  document.getElementById('app').innerHTML = render();
+
+  // Wait for Chart.js then draw
+  function tryDraw(attempts) {
+    if (typeof Chart !== 'undefined') { drawCharts(elapsedPct); return; }
+    if (attempts > 50) return;
+    setTimeout(() => tryDraw(attempts + 1), 50);
+  }
+  tryDraw(0);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', main);
+} else {
+  main();
+}
+</script>
+</body>
+</html>
