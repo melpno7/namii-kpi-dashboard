@@ -158,7 +158,7 @@ def create_kpi_row(metric_name: str, value: float, period_label: str, period_iso
         properties["Channel"] = {"select": {"name": channel}}
 
     payload = {
-        "parent": {"database_id": NOTION_KPI_TRACKER_DS},
+        "parent": {"database_id": NOTION_KPI_TRACKER_DB_ID},
         "properties": properties,
     }
     r = requests.post(
