@@ -43,15 +43,12 @@ SCOPES = [
     "https://www.googleapis.com/auth/webmasters.readonly",
 ]
 
-# Date range: previous full calendar month
+# Date range: last 30 days (rolling window, updated weekly)
 today = date.today()
-first_of_this_month = today.replace(day=1)
-last_month_end = first_of_this_month - timedelta(days=1)
-last_month_start = last_month_end.replace(day=1)
-PERIOD_LABEL = last_month_start.strftime("%B %Y")       # e.g. "April 2026"
-PERIOD_ISO = last_month_start.isoformat()               # e.g. "2026-04-01"
-DATE_START = last_month_start.isoformat()
-DATE_END = last_month_end.isoformat()
+DATE_END = today.isoformat()
+DATE_START = (today - timedelta(days=30)).isoformat()
+PERIOD_LABEL = f"Last 30 days to {today.strftime('%b %d, %Y')}"  # e.g. "Last 30 days to May 17, 2026"
+PERIOD_ISO = today.isoformat()  # use today as the anchor date for dedup
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
