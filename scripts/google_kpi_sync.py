@@ -32,7 +32,8 @@ SEARCH_CONSOLE_PROPERTY = "sc-domain:na-mii.co"
 
 NOTION_TOKEN = os.environ["NOTION_TOKEN"]
 # Use the data source (collection) ID, not the database page ID
-NOTION_KPI_TRACKER_DS = "1305e553-3a07-42cb-94cd-e5e7f4a05127"
+NOTION_KPI_TRACKER_DB_ID = "71052c30eae94e6c85d168b3b70121ee"  # database page ID for query
+NOTION_KPI_TRACKER_DS = "1305e553-3a07-42cb-94cd-e5e7f4a05127"  # collection ID for page creation
 
 CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
 CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
@@ -134,7 +135,7 @@ def notion_row_exists(metric_name: str, period_iso: str) -> bool:
         }
     }
     r = requests.post(
-        f"https://api.notion.com/v1/databases/{NOTION_KPI_TRACKER_DS}/query",
+        f"https://api.notion.com/v1/databases/{NOTION_KPI_TRACKER_DB_ID}/query",
         headers=NOTION_HEADERS,
         json=payload,
     )
