@@ -41,6 +41,7 @@
   .sync-banner b { color: var(--ink); font-weight: 700; }
   .sync-left { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
   .sync-pulse { display: inline-block; width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-right: 6px; vertical-align: middle; animation: pulse 2s ease-in-out infinite; }
+  .sync-pulse.loading { background: var(--amber); }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
   .sync-cta { color: var(--accent); font-weight: 600; }
 
@@ -144,6 +145,11 @@
   .metric-foot { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 6px; font-family: var(--mono); letter-spacing: 0.04em; text-transform: uppercase; }
   .metric-empty { display:flex; align-items:center; justify-content:center; height:100%; color:var(--muted); font-size:12px; }
 
+  /* LOADING STATE */
+  .loading-row { display: flex; align-items: center; gap: 10px; padding: 20px; color: var(--muted); font-size: 13px; font-family: var(--mono); }
+  .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--line) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; height: 14px; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
   /* COMPOSITION */
   .comp-wrap { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: center; }
   @media (max-width: 720px) { .comp-wrap { grid-template-columns: 1fr; } }
@@ -179,17 +185,21 @@
 
   .footer { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--muted); gap: 12px; flex-wrap: wrap; font-family: var(--mono); }
   .footer a { color: var(--accent); text-decoration: none; }
+
+  /* LIVE BADGE */
+  .live-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-family: var(--mono); font-weight: 700; color: var(--green); background: var(--green-soft); padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .live-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div class="wrap" id="app"><div class="loading-row"><span class="sync-pulse loading"></span> Loading dashboard…</div></div>
 
 <script>
 // ════════════════════════════════════════════════════════
-// SNAPSHOT — refreshed by Step 03 every Monday at 9 AM local
-// Last update: 2026-05-12 (Tuesday)
+// CONFIG
 // ════════════════════════════════════════════════════════
-const SNAPSHOT_DATE = '2026-05-13';
+// Data loaded from data.json (generated weekly by GitHub Actions)
+const DATA_URL = './data.json';
 
 const CYCLE = {
   month: 'May 2026',
@@ -201,156 +211,80 @@ const CYCLE = {
   pillars: { LinkedIn: 12, Instagram: 8, Blog: 4, Email: 3, Newsletter: 2, Other: 1 },
 };
 
-const NEXT_CYCLE = {
-  month: 'June 2026',
-  focus: 'Ryyu launch',
-  anchor: 'Ryyu launch — June 15',
-  start: '2026-06-01',
-  end: '2026-06-30',
-  totalPieces: 42,
-  status: 'Awaiting Approval',
-};
-
 const GOALS = [
-  { icon: '📞', short: 'Strategy Calls',    title: 'Book 4 inbound strategy calls',                target: 4,  unit: 'calls',    actual: 0,    status: 'Pending', auto: 'auto',    note: 'Calendly now connected. Re-sync to pull live.' },
-  { icon: '🎤', short: 'Voice Convos',      title: 'Generate 2 Ryyu Voice conversations',          target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', auto: 'split',   note: 'ICP: Founders/CEOs at Series A–C' },
-  { icon: '⚙️', short: 'Engine Convos',     title: 'Generate 2 Ryyu Engine conversations',         target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', auto: 'split',   note: 'ICP: CMOs at Series A–C' },
-  { icon: '📰', short: 'GEO/AEO Articles',  title: 'Publish 4 GEO/AEO-optimised articles',         target: 4,  unit: 'articles',actual: 0,    status: 'Pending', auto: 'manual',  note: 'Manual count weekly. 8 blogs planned cycle-wide.' },
-  { icon: '📧', short: 'Newsletter Open',   title: '35%+ newsletter open rate',                    target: 35, unit: '%',       actual: null, status: 'Pending', auto: 'auto',    note: 'First send June 11.' },
+  { icon: '📞', short: 'Strategy Calls',    title: 'Book 4 inbound strategy calls',                target: 4,  unit: 'calls',    actual: 0,    status: 'Pending', note: 'Calendly now connected. Re-sync to pull live.' },
+  { icon: '🎤', short: 'Voice Convos',      title: 'Generate 2 Ryyu Voice conversations',          target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', note: 'ICP: Founders/CEOs at Series A–C' },
+  { icon: '⚙️', short: 'Engine Convos',     title: 'Generate 2 Ryyu Engine conversations',         target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', note: 'ICP: CMOs at Series A–C' },
+  { icon: '📰', short: 'GEO/AEO Articles',  title: 'Publish 4 GEO/AEO-optimised articles',         target: 4,  unit: 'articles',actual: 0,    status: 'Pending', note: 'Manual count weekly.' },
+  { icon: '📧', short: 'Newsletter Open',   title: '35%+ newsletter open rate',                    target: 35, unit: '%',       actual: null, status: 'Pending', note: 'First send June 11.' },
 ];
 
-const METRICS = [
-  { name: 'Strategy Calls Booked',                  unit: '',         apr: 8,    now: 0,    target: 10,  channel: 'Sales' },
-  { name: 'Content-Attributed Conversations',       unit: '',         apr: null, now: 0,    target: 4,   channel: 'Overall' },
-  { name: 'LinkedIn ICP Engagement Rate',           unit: '%',        apr: 12.1, now: 6.98, target: 15,  channel: 'LinkedIn' },
-  { name: 'Newsletter Open Rate',                   unit: '%',        apr: null, now: null, target: 35,  channel: 'Email' },
-  { name: 'Email Click Rate',                       unit: '%',        apr: null, now: null, target: 8,   channel: 'Email' },
-  { name: 'Lead Magnet Downloads',                  unit: '',         apr: 0,    now: 0,    target: 50,  channel: 'Lead Magnet' },
-  { name: 'Blog Sessions',                          unit: 'sessions', apr: 180,  now: 48,   target: null, channel: 'Blog' },
-  { name: 'Instagram Reach',                        unit: '',         apr: 3,    now: 3,    target: null, channel: 'Instagram' },
-  { name: 'Instagram Saves',                        unit: '',         apr: 0,    now: 0,    target: null, channel: 'Instagram' },
-  { name: 'Sales Cycle Length',                     unit: 'days',     apr: 0,    now: 0,    target: 30,  channel: 'Sales' },
-  { name: 'Conversion Rate (Content → Conversation)', unit: '%',      apr: null, now: null, target: null, channel: 'Overall' },
-];
-
-// Daily Windsor pulls — May 4-10
 const DAILY = {
-  linkedin: [
-    { date: 'May 4', value: 3 },
-    { date: 'May 5', value: 10 },
-    { date: 'May 6', value: 0 },
-    { date: 'May 7', value: 0 },
-    { date: 'May 8', value: 8 },
-    { date: 'May 9', value: 14 },
-    { date: 'May 10', value: 8 },
-  ],
-  ga4: [
-    { date: 'May 4', value: 8 },
-    { date: 'May 5', value: 2 },
-    { date: 'May 6', value: 4 },
-    { date: 'May 7', value: 10 },
-    { date: 'May 8', value: 13 },
-    { date: 'May 9', value: 9 },
-    { date: 'May 10', value: 2 },
-  ],
-  instagram: [
-    { date: 'May 4', value: 1 },
-    { date: 'May 5', value: 1 },
-    { date: 'May 6', value: 0 },
-    { date: 'May 7', value: 0 },
-    { date: 'May 8', value: 0 },
-    { date: 'May 9', value: 1 },
-    { date: 'May 10', value: 0 },
-  ],
+  linkedin:  [{ date: 'May 4', value: 3 },{ date: 'May 5', value: 10 },{ date: 'May 6', value: 0 },{ date: 'May 7', value: 0 },{ date: 'May 8', value: 8 },{ date: 'May 9', value: 14 },{ date: 'May 10', value: 8 }],
+  ga4:       [{ date: 'May 4', value: 8 },{ date: 'May 5', value: 2 },{ date: 'May 6', value: 4 },{ date: 'May 7', value: 10 },{ date: 'May 8', value: 13 },{ date: 'May 9', value: 9 },{ date: 'May 10', value: 2 }],
+  instagram: [{ date: 'May 4', value: 1 },{ date: 'May 5', value: 1 },{ date: 'May 6', value: 0 },{ date: 'May 7', value: 0 },{ date: 'May 8', value: 0 },{ date: 'May 9', value: 1 },{ date: 'May 10', value: 0 }],
 };
 
-const RECENT_ENTRIES = [
-  { period: '2026-05-03', metric: 'LinkedIn ICP Engagement Rate', channel: 'LinkedIn',    value: '6.98%',  note: 'Windsor linkedin_organic. 43 impressions, 3 clicks.' },
-  { period: '2026-05-03', metric: 'Blog Sessions',                channel: 'Blog',        value: '48',     note: 'Windsor GA4. May 8 spike (13).' },
-  { period: '2026-05-03', metric: 'Instagram Reach',              channel: 'Instagram',   value: '3',      note: 'Account near-dormant — same as April.' },
-  { period: '2026-05-03', metric: 'Instagram Saves',              channel: 'Instagram',   value: '0',      note: 'No saves.' },
-  { period: '2026-05-03', metric: 'Sales Cycle Length',           channel: 'Sales',       value: '0 d',    note: '0 closed-won deals matched. Insufficient volume.' },
-  { period: '2026-05-03', metric: 'Lead Magnet Downloads',        channel: 'Lead Magnet', value: '0',      note: 'Pre-launch. Brand Alignment Diagnostic ships June 10.' },
-  { period: '2026-04-26', metric: 'Blog Sessions',                channel: 'Blog',        value: '38',     note: 'GA4 last 7 days. ~5/day avg.' },
-  { period: '2026-04-26', metric: 'Instagram Reach',              channel: 'Instagram',   value: '0',      note: 'Account fully dormant.' },
-  { period: '2026-04-01', metric: 'LinkedIn ICP Engagement Rate', channel: 'LinkedIn',    value: '12.1%',  note: 'April baseline. 62 interactions / 511 impressions.' },
-  { period: '2026-04-01', metric: 'Strategy Calls Booked',        channel: 'Sales',       value: '8',      note: 'April baseline. 8 Calendly events.' },
+const INSIGHTS = [
+  { severity: 'down', tag: 'Na-Mii LinkedIn', title: 'Company page down 42% — volume is the real story', body: '<b>Na-Mii company page</b>: 6.98% vs April 12.1%. Impressions cratered (43 last 7d vs ~511 in April). <i>Melissa\'s founder LinkedIn isn\'t tracked yet — that\'s the higher-leverage channel.</i>', action: 'Ramp company-page cadence + start logging founder profile manually each week.' },
+  { severity: 'up',   tag: 'Blog', title: 'Sessions on pace to beat April by 14%', body: '<b>48 sessions</b> last 7d → ~<b>206/mo</b> pace vs April baseline <b>180/mo</b>. The May 8 spike (13 sessions) had no scheduled publish — find the referral source.', action: 'Check GA4 source/medium for May 8 traffic.' },
+  { severity: 'alert',tag: 'Instagram', title: '8 IG pieces planned this month · 3 reach/week actual', body: 'IG reach: <b>3 last 7d</b>, basically dormant. But May plans <b>8 IG pieces (27% of monthly effort)</b>. That\'s real production time going into a channel returning near-zero.', action: 'Decide this week: revival sprint or pull IG from May and redistribute the hours.' },
+  { severity: 'flat', tag: 'Sales', title: 'May target ≈ half of April\'s pace', body: 'April booked <b>8 strategy calls</b>. May target is <b>4 calls</b> = 1/wk. Calendly MCP is now connected — next sync pulls live numbers.', action: 'Watch Week 3 (May 18–24): if calls trending below 1/wk, push founder LinkedIn cadence.' },
 ];
 
-const PILLAR_COLORS = {
-  LinkedIn: '#7c3aed', Instagram: '#db2777', Blog: '#1d3557', Email: '#c2410c',
-  Newsletter: '#d97706', 'Lead Magnet': '#15803d', 'Case Study': '#0891b2', Other: '#64748b',
+const METRIC_BASELINES = {
+  'Strategy Calls Booked': { apr: 8, target: 10, unit: '', channel: 'Sales' },
+  'Content-Attributed Conversations': { apr: null, target: 4, unit: '', channel: 'Overall' },
+  'LinkedIn ICP Engagement Rate': { apr: 12.1, target: 15, unit: '%', channel: 'LinkedIn' },
+  'Newsletter Open Rate': { apr: null, target: 35, unit: '%', channel: 'Email' },
+  'Email Click Rate': { apr: null, target: 8, unit: '%', channel: 'Email' },
+  'Lead Magnet Downloads': { apr: 0, target: 50, unit: '', channel: 'Lead Magnet' },
+  'Blog Sessions': { apr: 180, target: null, unit: 'sessions', channel: 'Blog' },
+  'Instagram Reach': { apr: 3, target: null, unit: '', channel: 'Instagram' },
+  'Instagram Saves': { apr: 0, target: null, unit: '', channel: 'Instagram' },
+  'Search Console Clicks': { apr: null, target: null, unit: '#', channel: 'Blog' },
+  'Sales Cycle Length': { apr: 0, target: 30, unit: 'days', channel: 'Sales' },
+  'Conversion Rate (Content → Conversation)': { apr: null, target: null, unit: '%', channel: 'Overall' },
 };
 
+const PILLAR_COLORS = { LinkedIn: '#7c3aed', Instagram: '#db2777', Blog: '#1d3557', Email: '#c2410c', Newsletter: '#d97706', 'Lead Magnet': '#15803d', Other: '#64748b' };
 const CHANNEL_COLORS = {
-  LinkedIn: { bg: '#ede9fe', fg: '#6d28d9' },
-  Blog:     { bg: '#e5edf5', fg: '#1d3557' },
-  Email:    { bg: '#ffedd5', fg: '#c2410c' },
-  Instagram:{ bg: '#fce7f3', fg: '#be185d' },
-  'Lead Magnet': { bg: '#dcfce7', fg: '#15803d' },
-  Sales:    { bg: '#fee2e2', fg: '#b91c1c' },
-  Overall:  { bg: '#f1f5f9', fg: '#64748b' },
+  LinkedIn: { bg: '#ede9fe', fg: '#6d28d9' }, Blog: { bg: '#e5edf5', fg: '#1d3557' },
+  Email: { bg: '#ffedd5', fg: '#c2410c' }, Instagram: { bg: '#fce7f3', fg: '#be185d' },
+  'Lead Magnet': { bg: '#dcfce7', fg: '#15803d' }, Sales: { bg: '#fee2e2', fg: '#b91c1c' },
+  Overall: { bg: '#f1f5f9', fg: '#64748b' },
 };
-
 const CONNECTORS = [
   { icon: '💼', name: 'LinkedIn',    note: 'Engagement',     href: 'https://www.linkedin.com/analytics/' },
   { icon: '📸', name: 'Instagram',   note: 'Reach + saves',  href: 'https://www.instagram.com/business/' },
   { icon: '📈', name: 'GA4',         note: 'Blog sessions',  href: 'https://analytics.google.com/' },
   { icon: '🎯', name: 'HubSpot',     note: 'Deals + leads',  href: 'https://app.hubspot.com/' },
   { icon: '📅', name: 'Calendly',    note: 'Strategy calls', href: 'https://calendly.com/event_types/user/me' },
-  { icon: '✍️', name: 'KPI Tracker', note: 'Log manually',   href: 'https://www.notion.so/71052c30eae94e6c85d168b3b70121ee' },
+  { icon: '✍️', name: 'KPI Tracker', note: 'View in Notion', href: 'https://www.notion.so/71052c30eae94e6c85d168b3b70121ee' },
 ];
-
-const INSIGHTS = [
-  {
-    severity: 'down', tag: 'Na-Mii LinkedIn',
-    title: 'Company page down 42% — volume is the real story',
-    body: '<b>Na-Mii company page</b>: 6.98% vs April 12.1%. Impressions cratered (43 last 7d vs ~511 in April, 91% drop) — the engine stopped, ratio is fine on tiny volume. <i>Note: this is the company page only. Melissa\'s founder LinkedIn isn\'t tracked yet, and that\'s the higher-leverage channel for ICP engagement.</i>',
-    action: 'Ramp company-page cadence + start logging founder profile manually each week.',
-  },
-  {
-    severity: 'up', tag: 'Blog',
-    title: 'Sessions on pace to beat April by 14%',
-    body: '<b>48 sessions</b> last 7d → ~<b>206/mo</b> pace vs April baseline <b>180/mo</b>. The May 8 spike (13 sessions) had no scheduled publish — find the referral source.',
-    action: 'Check GA4 source/medium for May 8 traffic.',
-  },
-  {
-    severity: 'alert', tag: 'Instagram',
-    title: '8 IG pieces planned this month · 3 reach/week actual',
-    body: 'IG reach: <b>3 last 7d</b>, basically dormant. But May plans <b>8 IG pieces (27% of monthly effort)</b>, plus another 8 in June. That\'s real production time going into a channel returning near-zero.',
-    action: 'Decide this week: revival sprint (≥5 pieces in 7 days) or pull IG from May and redistribute the production hours.',
-  },
-  {
-    severity: 'flat', tag: 'Sales',
-    title: 'May target ≈ half of April\'s pace',
-    body: 'April booked <b>8 strategy calls</b> at ~2/wk. May target is <b>4 calls</b> = 1/wk, which fits the pre-launch ramp (fewer net-new conversations expected before Ryyu ships June 15). Calendly MCP is now connected — next sync pulls live numbers.',
-    action: 'Watch Week 3 (May 18–24): if calls trending below 1/wk, push founder LinkedIn cadence ahead of the May 27 Diagnostic ship.',
-  },
-  {
-    severity: 'down', tag: 'Data',
-    title: 'Sales Cycle Length is unmeasurable',
-    body: 'Only 2 deals in HubSpot for 2026, both with close_date BEFORE create_date — backfilled historical data, not live tracking. <b>You can\'t compute median sales cycle on this</b>. Going to read 0 every week.',
-    action: 'Fix HubSpot deal-stage tracking or remove this from the scorecard.',
-  },
-  {
-    severity: 'flat', tag: 'Mix',
-    title: 'LinkedIn = 40% of May. Blog = 13% but driving real traffic.',
-    body: 'May mix: <b>12 LinkedIn</b>, <b>8 IG</b>, <b>4 Blog</b>, <b>3 Email</b>, <b>2 Newsletter</b>. Blog at 13% of effort is producing ~206 sessions/mo. LinkedIn at 40% of effort is producing 43 impressions/wk. Blog ROI per piece is materially higher right now.',
-    action: 'Test rebalancing — pull 2-3 IG pieces into Blog repurposing for May.',
-  },
-];
-
 const STYLE = {
-  'On Track':  { stripe: 'stripe-on', pill: 'pill-on', color: '#15803d' },
-  'At Risk':   { stripe: 'stripe-risk', pill: 'pill-risk', color: '#b45309' },
-  'Off Track': { stripe: 'stripe-off', pill: 'pill-off', color: '#b91c1c' },
+  'On Track':  { stripe: 'stripe-on',      pill: 'pill-on',      color: '#15803d' },
+  'At Risk':   { stripe: 'stripe-risk',    pill: 'pill-risk',    color: '#b45309' },
+  'Off Track': { stripe: 'stripe-off',     pill: 'pill-off',     color: '#b91c1c' },
   'Pending':   { stripe: 'stripe-pending', pill: 'pill-pending', color: '#64748b' },
 };
 
 Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif";
 Chart.defaults.color = '#6b6b66';
 
-// ──────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// DATA FETCH — reads data.json built by GitHub Actions
+// ════════════════════════════════════════════════════════
+async function fetchKpiEntries() {
+  const resp = await fetch(DATA_URL + '?t=' + Date.now());
+  if (!resp.ok) throw new Error(`data.json fetch ${resp.status}`);
+  const data = await resp.json();
+  return data.entries || [];
+}
+
+// ════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════
 const sum = a => a.reduce((x, y) => x + y, 0);
 const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
 const escapeHtml = s => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -361,7 +295,6 @@ function fmt(n, unit) {
   if (Number.isInteger(n)) return String(n);
   return n.toFixed(1);
 }
-
 function nextMonday9am(now) {
   const d = new Date(now);
   const day = d.getDay();
@@ -374,35 +307,61 @@ function nextMonday9am(now) {
 function fmtSyncDate(d) {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
-function relativeAge(snapshot) {
-  const diff = Math.floor((new Date() - new Date(snapshot)) / 3600000);
-  if (diff < 1) return 'just now';
-  if (diff < 24) return diff + 'h ago';
-  const days = Math.floor(diff / 24);
-  return days + 'd ago · ' + fmtSyncDate(new Date(snapshot));
+
+// ════════════════════════════════════════════════════════
+// BUILD METRICS from live Notion data
+// ════════════════════════════════════════════════════════
+function buildMetrics(entries) {
+  // Get most recent value per metric
+  const latest = {};
+  for (const e of entries) {
+    if (!e.metric) continue;
+    if (!latest[e.metric]) latest[e.metric] = e;
+  }
+
+  return Object.entries(METRIC_BASELINES).map(([name, base]) => {
+    const live = latest[name];
+    return {
+      name,
+      unit: base.unit || live?.unit || '',
+      apr: base.apr,
+      now: live ? live.value : null,
+      target: base.target,
+      channel: base.channel,
+      liveNote: live ? `Updated ${live.period}` : 'No data yet',
+    };
+  });
 }
 
-function render() {
+function buildRecentEntries(entries) {
+  return entries.slice(0, 15).map(e => ({
+    period: e.period,
+    metric: e.metric,
+    channel: e.channel,
+    value: e.value != null ? String(e.value) + (e.unit === '%' ? '%' : '') : '—',
+    note: e.notes || e.source || '',
+  }));
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════════════
+function render(metrics, recentEntries, lastSyncLabel, nextSyncLabel) {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const totalDays = daysBetween(CYCLE.start, CYCLE.end) + 1;
   const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(CYCLE.start, today) + 1));
   const elapsedPct = Math.max(0, Math.min(1, elapsedDays / totalDays));
-  const nextSync = nextMonday9am(now);
-  const lastSyncLabel = relativeAge(SNAPSHOT_DATE);
-  const nextSyncLabel = fmtSyncDate(nextSync) + ' · 9:00 AM';
-
-  // Status counts
   const counts = { 'On Track': 0, 'At Risk': 0, 'Off Track': 0, 'Pending': 0 };
   GOALS.forEach(g => counts[g.status]++);
-
   const totalPlanned = sum(Object.values(CYCLE.pillars));
 
   return `
     <div class="sync-banner">
       <div class="sync-left">
-        <span><span class="sync-pulse"></span><b>Last sync:</b> ${escapeHtml(lastSyncLabel)}</span>
-        <span><b>Next auto-sync:</b> ${escapeHtml(nextSyncLabel)} local</span>
+        <span><span class="sync-pulse"></span><b>Live data:</b> Notion KPI Tracker</span>
+        <span><b>Last fetched:</b> ${escapeHtml(lastSyncLabel)}</span>
+        <span><b>Script auto-sync:</b> ${escapeHtml(nextSyncLabel)}</span>
       </div>
       <span class="sync-cta">Say "run Step 03" to refresh</span>
     </div>
@@ -486,10 +445,13 @@ function render() {
     <div class="section">
       <div class="section-head">
         <h2 class="section-title">All Metrics</h2>
-        <div class="section-sub">April baseline vs this cycle vs target</div>
+        <div class="section-sub">
+          Live from Notion KPI Tracker · April baseline vs now vs target
+          <span class="live-badge" style="margin-left:8px;"><span class="live-dot"></span>Live</span>
+        </div>
       </div>
       <div class="metrics-grid">
-        ${METRICS.map((m, i) => renderMetric(m, i)).join('')}
+        ${metrics.map((m, i) => renderMetric(m, i)).join('')}
       </div>
     </div>
 
@@ -505,14 +467,12 @@ function render() {
             const pct = Math.round((c / totalPlanned) * 100);
             const roi = n === 'Instagram' ? 'roi-bad' : (n === 'Blog' ? 'roi-good' : 'roi-neutral');
             const roiLabel = n === 'Instagram' ? 'low ROI' : (n === 'Blog' ? 'high ROI' : '—');
-            return `
-              <div class="comp-row">
-                <span class="comp-dot" style="background: ${PILLAR_COLORS[n] || '#64748b'};"></span>
-                <span class="comp-label">${escapeHtml(n)}</span>
-                <span class="comp-count">${c} pcs · ${pct}%</span>
-                <span class="comp-roi ${roi}">${roiLabel}</span>
-              </div>
-            `;
+            return `<div class="comp-row">
+              <span class="comp-dot" style="background: ${PILLAR_COLORS[n] || '#64748b'};"></span>
+              <span class="comp-label">${escapeHtml(n)}</span>
+              <span class="comp-count">${c} pcs · ${pct}%</span>
+              <span class="comp-roi ${roi}">${roiLabel}</span>
+            </div>`;
           }).join('')}
         </div>
       </div>
@@ -521,23 +481,24 @@ function render() {
     <div class="section">
       <div class="section-head">
         <h2 class="section-title">Recent KPI Entries</h2>
-        <div class="section-sub">Last ${RECENT_ENTRIES.length} rows logged · newest first</div>
+        <div class="section-sub">
+          Last ${recentEntries.length} rows from Notion · newest first
+          <span class="live-badge" style="margin-left:8px;"><span class="live-dot"></span>Live</span>
+        </div>
       </div>
       <div class="entries-wrap">
         <table class="entries-table">
           <thead><tr><th>Period</th><th>Metric</th><th>Channel</th><th class="num">Value</th><th>Note</th></tr></thead>
           <tbody>
-            ${RECENT_ENTRIES.map(r => {
+            ${recentEntries.map(r => {
               const c = CHANNEL_COLORS[r.channel] || CHANNEL_COLORS.Overall;
-              return `
-                <tr>
-                  <td style="font-family: var(--mono); font-size: 12px;">${escapeHtml(r.period)}</td>
-                  <td><b>${escapeHtml(r.metric)}</b></td>
-                  <td><span class="channel" style="background:${c.bg};color:${c.fg};">${escapeHtml(r.channel)}</span></td>
-                  <td class="num">${escapeHtml(r.value)}</td>
-                  <td style="font-size: 12px; color: var(--muted); max-width: 360px;">${escapeHtml(r.note)}</td>
-                </tr>
-              `;
+              return `<tr>
+                <td style="font-family: var(--mono); font-size: 12px;">${escapeHtml(r.period)}</td>
+                <td><b>${escapeHtml(r.metric)}</b></td>
+                <td><span class="channel" style="background:${c.bg};color:${c.fg};">${escapeHtml(r.channel)}</span></td>
+                <td class="num">${escapeHtml(r.value)}</td>
+                <td style="font-size: 12px; color: var(--muted); max-width: 360px;">${escapeHtml(r.note)}</td>
+              </tr>`;
             }).join('')}
           </tbody>
         </table>
@@ -545,9 +506,7 @@ function render() {
     </div>
 
     <div class="section">
-      <div class="section-head">
-        <h2 class="section-title">Log this week</h2>
-      </div>
+      <div class="section-head"><h2 class="section-title">Log this week</h2></div>
       <div class="connectors">
         ${CONNECTORS.map(c => `
           <a class="conn" href="${c.href}" target="_blank" rel="noopener">
@@ -565,7 +524,7 @@ function render() {
         <a href="https://www.notion.so/988401501f9746f0bed594eb3c180a32" target="_blank">Cycle Goals</a> ·
         <a href="https://www.notion.so/71052c30eae94e6c85d168b3b70121ee" target="_blank">KPI Tracker</a>
       </div>
-      <div>Snapshot: ${SNAPSHOT_DATE} · Refreshed by Step 03</div>
+      <div>Live data · Fetched on load · Script sync every Monday 9:30 AM UTC</div>
     </div>
   `;
 }
@@ -583,25 +542,20 @@ function renderGoal(g, elapsedPct) {
   } else {
     projection = g.note || '';
   }
-  return `
-    <div class="goal-card">
-      <div class="goal-stripe ${style.stripe}"></div>
-      <div class="goal-head">
-        <span class="goal-icon">${g.icon}</span>
-        <span class="goal-pill ${style.pill}">${g.status}</span>
-      </div>
-      <div class="goal-name">${escapeHtml(g.short)}</div>
-      <div class="goal-big">
-        <span class="goal-big-num">${display}</span>
-        <span class="goal-big-target">of ${g.target}${g.unit === '%' ? '%' : ' ' + g.unit}</span>
-      </div>
-      <div class="goal-progress">
-        <div class="goal-progress-bar"><div class="goal-progress-fill" style="width: ${pct}%; background: ${style.color};"></div></div>
-        <div class="goal-progress-pct">${Math.round(pct)}%</div>
-      </div>
-      <div class="goal-projection">${escapeHtml(projection)}</div>
+  return `<div class="goal-card">
+    <div class="goal-stripe ${style.stripe}"></div>
+    <div class="goal-head"><span class="goal-icon">${g.icon}</span><span class="goal-pill ${style.pill}">${g.status}</span></div>
+    <div class="goal-name">${escapeHtml(g.short)}</div>
+    <div class="goal-big">
+      <span class="goal-big-num">${display}</span>
+      <span class="goal-big-target">of ${g.target}${g.unit === '%' ? '%' : ' ' + g.unit}</span>
     </div>
-  `;
+    <div class="goal-progress">
+      <div class="goal-progress-bar"><div class="goal-progress-fill" style="width: ${pct}%; background: ${style.color};"></div></div>
+      <div class="goal-progress-pct">${Math.round(pct)}%</div>
+    </div>
+    <div class="goal-projection">${escapeHtml(projection)}</div>
+  </div>`;
 }
 
 function renderMetric(m, idx) {
@@ -617,38 +571,34 @@ function renderMetric(m, idx) {
   } else if (m.now == null) {
     delta = `<span class="metric-delta delta-flat">no data</span>`;
   }
-  const sub = m.apr != null ? `Apr baseline: ${fmt(m.apr, m.unit)}${m.unit === '%' ? '%' : ''}` : 'No baseline';
-
-  return `
-    <div class="metric-card">
-      <div class="metric-head">
-        <div><h3 class="metric-name">${escapeHtml(m.name)}</h3><div class="metric-sub">${escapeHtml(sub)}</div></div>
-        ${delta}
-      </div>
-      <div class="metric-now">
-        <span class="metric-val">${fmt(m.now, m.unit)}${m.unit === '%' ? '%' : ''}</span>
-        <span class="metric-unit">${m.unit && m.unit !== '%' ? m.unit : (m.now != null ? 'this cycle' : '')}</span>
-      </div>
-      <div class="metric-context">Target: <b style="color: var(--ink-2);">${fmt(m.target, m.unit)}${m.unit === '%' ? '%' : (m.target && m.unit ? ' ' + m.unit : '')}</b></div>
-      <div class="metric-chart-wrap"><canvas id="mc-${idx}" data-baseline="${m.apr ?? ''}" data-current="${m.now ?? ''}" data-target="${m.target ?? ''}" data-unit="${m.unit}"></canvas></div>
-      <div class="metric-foot"><span>Apr</span><span>Now</span><span>Target</span></div>
+  const sub = m.liveNote || (m.apr != null ? `Apr baseline: ${fmt(m.apr, m.unit)}${m.unit === '%' ? '%' : ''}` : 'No baseline');
+  return `<div class="metric-card">
+    <div class="metric-head">
+      <div><h3 class="metric-name">${escapeHtml(m.name)}</h3><div class="metric-sub">${escapeHtml(sub)}</div></div>
+      ${delta}
     </div>
-  `;
+    <div class="metric-now">
+      <span class="metric-val">${fmt(m.now, m.unit)}${m.unit === '%' ? '%' : ''}</span>
+      <span class="metric-unit">${m.unit && m.unit !== '%' ? m.unit : (m.now != null ? 'this cycle' : '')}</span>
+    </div>
+    <div class="metric-context">Target: <b style="color: var(--ink-2);">${fmt(m.target, m.unit)}${m.unit === '%' ? '%' : (m.target && m.unit ? ' ' + m.unit : '')}</b></div>
+    <div class="metric-chart-wrap"><canvas id="mc-${idx}" data-baseline="${m.apr ?? ''}" data-current="${m.now ?? ''}" data-target="${m.target ?? ''}" data-unit="${m.unit}"></canvas></div>
+    <div class="metric-foot"><span>Apr</span><span>Now</span><span>Target</span></div>
+  </div>`;
 }
 
 function renderPulse(name, daily, color, id) {
   const total = sum(daily.map(d => d.value));
-  return `
-    <div class="pulse-card">
-      <div class="pulse-head"><div class="pulse-name">${escapeHtml(name)}</div><div class="pulse-sum">${total}</div></div>
-      <div class="pulse-chart"><canvas id="${id}" data-color="${color}"></canvas></div>
-    </div>
-  `;
+  return `<div class="pulse-card">
+    <div class="pulse-head"><div class="pulse-name">${escapeHtml(name)}</div><div class="pulse-sum">${total}</div></div>
+    <div class="pulse-chart"><canvas id="${id}" data-color="${color}"></canvas></div>
+  </div>`;
 }
 
-// ──────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// CHARTS
+// ════════════════════════════════════════════════════════
 function drawCharts(elapsedPct) {
-  // Cycle donut
   const donut = document.getElementById('cycle-donut');
   if (donut) new Chart(donut, {
     type: 'doughnut',
@@ -656,7 +606,6 @@ function drawCharts(elapsedPct) {
     options: { cutout: '74%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
   });
 
-  // Metric bars
   document.querySelectorAll('canvas[id^="mc-"]').forEach(canvas => {
     const b = parseFloat(canvas.dataset.baseline);
     const c = parseFloat(canvas.dataset.current);
@@ -678,57 +627,55 @@ function drawCharts(elapsedPct) {
     });
   });
 
-  // Daily sparklines
-  [
-    { id: 'pulse-li',  data: DAILY.linkedin,  color: '#7c3aed' },
-    { id: 'pulse-ga4', data: DAILY.ga4,       color: '#1d3557' },
-    { id: 'pulse-ig',  data: DAILY.instagram, color: '#db2777' },
-  ].forEach(p => {
+  [{ id: 'pulse-li', data: DAILY.linkedin, color: '#7c3aed' },{ id: 'pulse-ga4', data: DAILY.ga4, color: '#1d3557' },{ id: 'pulse-ig', data: DAILY.instagram, color: '#db2777' }].forEach(p => {
     const c = document.getElementById(p.id);
     if (!c) return;
     new Chart(c, {
       type: 'line',
-      data: {
-        labels: p.data.map(d => d.date),
-        datasets: [{
-          data: p.data.map(d => d.value),
-          borderColor: p.color, backgroundColor: p.color + '22',
-          fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: p.color, borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-        scales: { x: { ticks: { font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { font: { size: 9 } }, grid: { color: '#f0f0eb' } } }
-      }
+      data: { labels: p.data.map(d => d.date), datasets: [{ data: p.data.map(d => d.value), borderColor: p.color, backgroundColor: p.color + '22', fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: p.color, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } }, scales: { x: { ticks: { font: { size: 9 } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { font: { size: 9 } }, grid: { color: '#f0f0eb' } } } }
     });
   });
 
-  // Composition donut
   const comp = document.getElementById('comp-chart');
   if (comp) {
     const entries = Object.entries(CYCLE.pillars).filter(([n, c]) => c > 0);
     new Chart(comp, {
       type: 'doughnut',
-      data: {
-        labels: entries.map(e => e[0]),
-        datasets: [{ data: entries.map(e => e[1]), backgroundColor: entries.map(e => PILLAR_COLORS[e[0]] || '#64748b'), borderWidth: 2, borderColor: '#ffffff' }]
-      },
+      data: { labels: entries.map(e => e[0]), datasets: [{ data: entries.map(e => e[1]), backgroundColor: entries.map(e => PILLAR_COLORS[e[0]] || '#64748b'), borderWidth: 2, borderColor: '#ffffff' }] },
       options: { cutout: '60%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' pieces' } } } }
     });
   }
 }
 
-// ──────────────────────────────────────────────────────────
-function main() {
-  const today = new Date().toISOString().slice(0, 10);
+// ════════════════════════════════════════════════════════
+// MAIN
+// ════════════════════════════════════════════════════════
+async function main() {
+  const now = new Date();
+  const lastSyncLabel = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' today';
+  const nextSyncLabel = fmtSyncDate(nextMonday9am(now)) + ' · 9:30 AM UTC';
+
+  let metrics, recentEntries;
+
+  try {
+    const entries = await fetchKpiEntries();
+    metrics = buildMetrics(entries);
+    recentEntries = buildRecentEntries(entries);
+  } catch (err) {
+    console.error('Notion fetch failed:', err);
+    // Fallback to static data if Notion unreachable
+    metrics = Object.entries(METRIC_BASELINES).map(([name, base]) => ({ name, ...base, now: null, liveNote: 'Could not load live data' }));
+    recentEntries = [];
+  }
+
+  const today = now.toISOString().slice(0, 10);
   const totalDays = daysBetween(CYCLE.start, CYCLE.end) + 1;
   const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(CYCLE.start, today) + 1));
   const elapsedPct = Math.max(0, Math.min(1, elapsedDays / totalDays));
 
-  document.getElementById('app').innerHTML = render();
+  document.getElementById('app').innerHTML = render(metrics, recentEntries, lastSyncLabel, nextSyncLabel);
 
-  // Wait for Chart.js then draw
   function tryDraw(attempts) {
     if (typeof Chart !== 'undefined') { drawCharts(elapsedPct); return; }
     if (attempts > 50) return;
