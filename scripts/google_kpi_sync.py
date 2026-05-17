@@ -122,13 +122,12 @@ NOTION_HEADERS = {
 }
 
 
-def notion_row_exists(metric_name: str, period_iso: str) -> bool:
+def notion_row_exists(metric_name: str, period_label: str) -> bool:
+    entry_title = f"{metric_name} — {period_label}"
     payload = {
         "filter": {
-            "and": [
-                {"property": "Metric", "select": {"equals": metric_name}},
-                {"property": "Period", "date": {"equals": period_iso}},
-            ]
+            "property": "Entry",
+            "title": {"equals": entry_title}
         }
     }
     r = requests.post(
@@ -136,13 +135,15 @@ def notion_row_exists(metric_name: str, period_iso: str) -> bool:
         headers=NOTION_HEADERS,
         json=payload,
     )
+    if not r.ok:
+        print(f"  Dedup check error {r.status_code}: {r.text}")
     r.raise_for_status()
     return len(r.json().get("results", [])) > 0
 
 
 def create_kpi_row(metric_name: str, value: float, period_label: str, period_iso: str,
                    channel: str = None, source: str = "Website Analytics", unit: str = "#"):
-    if notion_row_exists(metric_name, period_iso):
+    if notion_row_exists(metric_name, period_label):
         print(f"  Skipping — row already exists: {metric_name} / {period_label}")
         return
 
