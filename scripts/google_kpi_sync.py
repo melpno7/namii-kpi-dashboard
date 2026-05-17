@@ -181,9 +181,8 @@ def main():
                    channel="Blog", unit="sessions")
 
     clicks, impressions = fetch_search_console(credentials)
-    # Uncomment to write Search Console clicks as a separate KPI row:
-    # create_kpi_row("Search Console Clicks", clicks, PERIOD_LABEL, PERIOD_ISO,
-    #                channel="Blog", unit="#")
+    create_kpi_row("Search Console Clicks", clicks, PERIOD_LABEL, PERIOD_ISO,
+                   channel="Blog", unit="#")
 
     print("Done.")
 
