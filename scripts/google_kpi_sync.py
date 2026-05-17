@@ -166,6 +166,8 @@ def create_kpi_row(metric_name: str, value: float, period_label: str, period_iso
         headers=NOTION_HEADERS,
         json=payload,
     )
+    if not r.ok:
+        print(f"  Notion error {r.status_code}: {r.text}")
     r.raise_for_status()
     print(f"  Created row: {metric_name} = {value} ({period_label})")
 
