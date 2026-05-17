@@ -4,17 +4,18 @@ Pulls Blog Sessions from GA4 and Search Console clicks/impressions,
 writes rows to the Na-Mii KPI Tracker Notion database.
 
 Runs via GitHub Actions cron. Requires these GitHub Secrets:
-  GOOGLE_SERVICE_ACCOUNT_JSON  - full contents of the service account JSON key
-  NOTION_TOKEN                 - Internal Integration Secret for Na-Mii KPI Scripts
+  GOOGLE_CLIENT_ID      - OAuth client ID
+  GOOGLE_CLIENT_SECRET  - OAuth client secret
+  GOOGLE_REFRESH_TOKEN  - OAuth refresh token (generated via get_refresh_token.py)
+  NOTION_TOKEN          - Internal Integration Secret for Na-Mii KPI Scripts
 """
 
-import json
 import os
-import sys
 from datetime import date, timedelta
 
 import requests
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
@@ -32,6 +33,9 @@ SEARCH_CONSOLE_PROPERTY = "sc-domain:na-mii.co"
 NOTION_TOKEN = os.environ["NOTION_TOKEN"]
 NOTION_KPI_TRACKER_DB = "1305e553-3a07-42cb-94cd-e5e7f4a05127"
 
+CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
+CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
+
 SCOPES = [
     "https://www.googleapis.com/auth/analytics.readonly",
     "https://www.googleapis.com/auth/webmasters.readonly",
@@ -42,16 +46,23 @@ today = date.today()
 first_of_this_month = today.replace(day=1)
 last_month_end = first_of_this_month - timedelta(days=1)
 last_month_start = last_month_end.replace(day=1)
-PERIOD_LABEL = last_month_start.strftime("%B %Y")   # e.g. "April 2026"
+PERIOD_LABEL = last_month_start.strftime("%B %Y")
 DATE_START = last_month_start.isoformat()
 DATE_END = last_month_end.isoformat()
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def get_credentials():
-    sa_json = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
-    sa_info = json.loads(sa_json)
-    return service_account.Credentials.from_service_account_info(sa_info, scopes=SCOPES)
+    credentials = Credentials(
+        token=None,
+        refresh_token=os.environ["GOOGLE_REFRESH_TOKEN"],
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=CLIENT_ID,
+        client_secret=CLIENT_SECRET,
+        scopes=SCOPES,
+    )
+    credentials.refresh(Request())
+    return credentials
 
 
 # ── GA4: Blog Sessions ────────────────────────────────────────────────────────
@@ -112,7 +123,6 @@ NOTION_HEADERS = {
 
 
 def notion_row_exists(metric_name: str, period: str) -> bool:
-    """Return True if a row for this metric + period already exists."""
     payload = {
         "filter": {
             "and": [
@@ -158,17 +168,11 @@ def main():
     print(f"Syncing Google KPIs for period: {PERIOD_LABEL} ({DATE_START} → {DATE_END})")
     credentials = get_credentials()
 
-    # GA4
     blog_sessions = fetch_ga4_blog_sessions(credentials)
     create_kpi_row("Blog Sessions", blog_sessions, PERIOD_LABEL)
 
-    # Search Console — we log clicks as the primary metric
-    # Impressions stored as a separate row for reference
     clicks, impressions = fetch_search_console(credentials)
-    # Search Console clicks map to organic traffic signal — store under Blog Sessions
-    # if you want a separate SC metric, add "Search Console Clicks" to the Metric options
-    # For now we log clicks only if they differ meaningfully from GA4 sessions
-    # Uncomment below to write SC clicks as a separate row:
+    # Uncomment to write Search Console clicks as a separate KPI row:
     # create_kpi_row("Search Console Clicks", clicks, PERIOD_LABEL)
 
     print("Done.")
