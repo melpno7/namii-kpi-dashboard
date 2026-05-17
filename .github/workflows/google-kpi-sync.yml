@@ -1,0 +1,29 @@
+name: Google KPI Sync
+
+on:
+  schedule:
+    # Runs at 9:30 AM UTC on the 1st of every month (syncs previous month's data)
+    - cron: "30 9 1 * *"
+  workflow_dispatch:  # Allow manual runs from GitHub Actions UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements-google.txt
+
+      - name: Run Google KPI sync
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: python scripts/google_kpi_sync.py
