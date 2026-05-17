@@ -30,11 +30,11 @@ def fetch_entries():
     entries = []
     for page in results:
         p = page["properties"]
-        def txt(prop): return prop.get("title", [{}])[0].get("plain_text", "") if prop else ""
+        def txt(prop): return (prop.get("title") or [{}])[0].get("plain_text", "") if prop else ""
         def sel(prop): return (prop.get("select") or {}).get("name", "") if prop else ""
         def num(prop): return prop.get("number") if prop else None
-        def dt(prop): return prop.get("date", {}).get("start", "") if prop else ""
-        def rtxt(prop): return prop.get("rich_text", [{}])[0].get("plain_text", "") if prop else ""
+        def dt(prop): return (prop.get("date") or {}).get("start", "") if prop else ""
+        def rtxt(prop): rt = (prop.get("rich_text") or []) if prop else []; return rt[0].get("plain_text", "") if rt else ""
         entries.append({
             "entry":   txt(p.get("Entry")),
             "metric":  sel(p.get("Metric")),
