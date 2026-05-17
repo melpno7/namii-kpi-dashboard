@@ -6,7 +6,7 @@ writes rows to the Na-Mii KPI Tracker Notion database.
 Runs via GitHub Actions cron. Requires these GitHub Secrets:
   GOOGLE_CLIENT_ID      - OAuth client ID
   GOOGLE_CLIENT_SECRET  - OAuth client secret
-  GOOGLE_REFRESH_TOKEN  - OAuth refresh token (generated via get_refresh_token.py)
+  GOOGLE_REFRESH_TOKEN  - OAuth refresh token
   NOTION_TOKEN          - Internal Integration Secret for Na-Mii KPI Scripts
 """
 
@@ -31,7 +31,8 @@ GA4_PROPERTY_ID = "471407412"
 SEARCH_CONSOLE_PROPERTY = "sc-domain:na-mii.co"
 
 NOTION_TOKEN = os.environ["NOTION_TOKEN"]
-NOTION_KPI_TRACKER_DB = "71052c30eae94e6c85d168b3b70121ee"
+# Use the data source (collection) ID, not the database page ID
+NOTION_KPI_TRACKER_DS = "1305e553-3a07-42cb-94cd-e5e7f4a05127"
 
 CLIENT_ID = os.environ["GOOGLE_CLIENT_ID"]
 CLIENT_SECRET = os.environ["GOOGLE_CLIENT_SECRET"]
@@ -46,7 +47,8 @@ today = date.today()
 first_of_this_month = today.replace(day=1)
 last_month_end = first_of_this_month - timedelta(days=1)
 last_month_start = last_month_end.replace(day=1)
-PERIOD_LABEL = last_month_start.strftime("%B %Y")
+PERIOD_LABEL = last_month_start.strftime("%B %Y")       # e.g. "April 2026"
+PERIOD_ISO = last_month_start.isoformat()               # e.g. "2026-04-01"
 DATE_START = last_month_start.isoformat()
 DATE_END = last_month_end.isoformat()
 
@@ -122,17 +124,17 @@ NOTION_HEADERS = {
 }
 
 
-def notion_row_exists(metric_name: str, period: str) -> bool:
+def notion_row_exists(metric_name: str, period_iso: str) -> bool:
     payload = {
         "filter": {
             "and": [
                 {"property": "Metric", "select": {"equals": metric_name}},
-                {"property": "Period", "rich_text": {"equals": period}},
+                {"property": "Period", "date": {"equals": period_iso}},
             ]
         }
     }
     r = requests.post(
-        f"https://api.notion.com/v1/databases/{NOTION_KPI_TRACKER_DB}/query",
+        f"https://api.notion.com/v1/databases/{NOTION_KPI_TRACKER_DS}/query",
         headers=NOTION_HEADERS,
         json=payload,
     )
@@ -140,18 +142,26 @@ def notion_row_exists(metric_name: str, period: str) -> bool:
     return len(r.json().get("results", [])) > 0
 
 
-def create_kpi_row(metric_name: str, value: float, period: str):
-    if notion_row_exists(metric_name, period):
-        print(f"  Skipping — row already exists: {metric_name} / {period}")
+def create_kpi_row(metric_name: str, value: float, period_label: str, period_iso: str,
+                   channel: str = None, source: str = "Website Analytics", unit: str = "#"):
+    if notion_row_exists(metric_name, period_iso):
+        print(f"  Skipping — row already exists: {metric_name} / {period_label}")
         return
 
+    properties = {
+        "Entry": {"title": [{"text": {"content": f"{metric_name} — {period_label}"}}]},
+        "Metric": {"select": {"name": metric_name}},
+        "Period": {"date": {"start": period_iso}},
+        "Value": {"number": value},
+        "Source": {"select": {"name": source}},
+        "Unit": {"select": {"name": unit}},
+    }
+    if channel:
+        properties["Channel"] = {"select": {"name": channel}}
+
     payload = {
-        "parent": {"database_id": NOTION_KPI_TRACKER_DB},
-        "properties": {
-            "Metric": {"select": {"name": metric_name}},
-            "Period": {"rich_text": [{"text": {"content": period}}]},
-            "Value": {"number": value},
-        },
+        "parent": {"database_id": NOTION_KPI_TRACKER_DS},
+        "properties": properties,
     }
     r = requests.post(
         "https://api.notion.com/v1/pages",
@@ -159,7 +169,7 @@ def create_kpi_row(metric_name: str, value: float, period: str):
         json=payload,
     )
     r.raise_for_status()
-    print(f"  Created row: {metric_name} = {value} ({period})")
+    print(f"  Created row: {metric_name} = {value} ({period_label})")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -169,11 +179,13 @@ def main():
     credentials = get_credentials()
 
     blog_sessions = fetch_ga4_blog_sessions(credentials)
-    create_kpi_row("Blog Sessions", blog_sessions, PERIOD_LABEL)
+    create_kpi_row("Blog Sessions", blog_sessions, PERIOD_LABEL, PERIOD_ISO,
+                   channel="Blog", unit="sessions")
 
     clicks, impressions = fetch_search_console(credentials)
     # Uncomment to write Search Console clicks as a separate KPI row:
-    # create_kpi_row("Search Console Clicks", clicks, PERIOD_LABEL)
+    # create_kpi_row("Search Console Clicks", clicks, PERIOD_LABEL, PERIOD_ISO,
+    #                channel="Blog", unit="#")
 
     print("Done.")
 
