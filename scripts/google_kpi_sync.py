@@ -71,8 +71,18 @@ def fetch_ga4_blog_sessions(credentials):
     client = BetaAnalyticsDataClient(credentials=credentials)
     request = RunReportRequest(
         property=f"properties/{GA4_PROPERTY_ID}",
+        dimensions=[Dimension(name="pagePathPlusQueryString")],
         metrics=[Metric(name="sessions")],
         date_ranges=[DateRange(start_date=DATE_START, end_date=DATE_END)],
+        dimension_filter={
+            "filter": {
+                "field_name": "pagePathPlusQueryString",
+                "string_filter": {
+                    "match_type": "BEGINS_WITH",
+                    "value": "/insights",
+                },
+            }
+        },
     )
     response = client.run_report(request)
     total = sum(int(row.metric_values[0].value) for row in response.rows)
