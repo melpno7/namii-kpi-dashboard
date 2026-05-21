@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-18T14:29:36.492680Z",
-  "entry_count": 44,
+  "generated_at": "2026-05-21T22:54:55.679183Z",
+  "entry_count": 52,
   "entries": [
     {
       "entry": "Blog Sessions \u2014 June 2026",
@@ -99,6 +99,30 @@
       "notes": "Two sends: June 11 + June 25. June 11 send is the pre-Ryyu-launch warmup (4 days out). June 25 is the post-launch roundup. Log the average of both sends."
     },
     {
+      "entry": "Search Console Clicks \u2014 Last 30 days to May 21, 2026",
+      "metric": "Search Console Clicks",
+      "period": "2026-05-21",
+      "value": 11,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "#",
+      "notes": ""
+    },
+    {
+      "entry": "Blog Sessions \u2014 Last 30 days to May 21, 2026",
+      "metric": "Blog Sessions",
+      "period": "2026-05-21",
+      "value": 46,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "sessions",
+      "notes": ""
+    },
+    {
       "entry": "Search Console Clicks \u2014 Last 30 days to May 18, 2026",
       "metric": "Search Console Clicks",
       "period": "2026-05-18",
@@ -145,6 +169,78 @@
       "source": "Website Analytics",
       "unit": "sessions",
       "notes": ""
+    },
+    {
+      "entry": "Strategy Calls Booked \u2014 2026-05-11",
+      "metric": "Strategy Calls Booked",
+      "period": "2026-05-11",
+      "value": 0,
+      "target": null,
+      "status": "",
+      "channel": "Sales",
+      "source": "CRM",
+      "unit": "#",
+      "notes": "Auto-pulled from Calendly meetings-list_events for 2026-05-11 \u2192 2026-05-18. 0 active scheduled events for host "
+    },
+    {
+      "entry": "Sales Cycle Length \u2014 2026-05-11",
+      "metric": "Sales Cycle Length",
+      "period": "2026-05-11",
+      "value": 0,
+      "target": null,
+      "status": "",
+      "channel": "Sales",
+      "source": "CRM",
+      "unit": "days",
+      "notes": "Auto-pulled from HubSpot deals (closedate \u2265 2026-05-06, hs_is_closed_won = true). 0 closed-won deals this cycle \u2014 insufficient deal volume to compute median. Value stored as 0 with caveat."
+    },
+    {
+      "entry": "Instagram Reach \u2014 2026-05-11",
+      "metric": "Instagram Reach",
+      "period": "2026-05-11",
+      "value": 352,
+      "target": null,
+      "status": "",
+      "channel": "Instagram",
+      "source": "Instagram Insights",
+      "unit": "#",
+      "notes": "Auto-pulled from Windsor instagram last_7d. Daily reach: 0, 0, 2, 0, 261, 80, 9. May 15 spike (261) drove the week \u2014 investigate which post and replicate."
+    },
+    {
+      "entry": "LinkedIn ICP Engagement Rate \u2014 2026-05-11",
+      "metric": "LinkedIn ICP Engagement Rate",
+      "period": "2026-05-11",
+      "value": 8,
+      "target": null,
+      "status": "",
+      "channel": "LinkedIn",
+      "source": "LinkedIn Analytics",
+      "unit": "%",
+      "notes": "Auto-pulled from Windsor linkedin_organic last_7d. Account-level engagement (not ICP-filtered \u2014 Windsor exposes account-level only). Computed: (clicks 13 + likes 10 + comments 1 + shares 0) / impressions 300 \u00d7 100 = 8.0%. Daily impressions: 2, 70, 20, 108, 50, 21, 29."
+    },
+    {
+      "entry": "Instagram Saves \u2014 2026-05-11",
+      "metric": "Instagram Saves",
+      "period": "2026-05-11",
+      "value": 3,
+      "target": null,
+      "status": "",
+      "channel": "Instagram",
+      "source": "Instagram Insights",
+      "unit": "#",
+      "notes": "Auto-pulled from Windsor instagram last_7d. All 3 saves on May 15 \u2014 same day as reach spike. Signal that this single post earned both reach and bookmark intent."
+    },
+    {
+      "entry": "Lead Magnet Downloads \u2014 2026-05-11",
+      "metric": "Lead Magnet Downloads",
+      "period": "2026-05-11",
+      "value": 0,
+      "target": null,
+      "status": "",
+      "channel": "Lead Magnet",
+      "source": "CRM",
+      "unit": "#",
+      "notes": "Auto-pulled from HubSpot search_crm_objects contacts (createdate \u2265 2026-05-11). 0 new contacts in week. Brand Alignment Diagnostic ships May 27 \u2014 current 0 is pre-launch baseline."
     },
     {
       "entry": "Blog Sessions \u2014 2026-05-04",
