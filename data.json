@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-21T22:54:55.679183Z",
-  "entry_count": 52,
+  "generated_at": "2026-05-25T12:50:24.113720Z",
+  "entry_count": 54,
   "entries": [
     {
       "entry": "Blog Sessions \u2014 June 2026",
@@ -97,6 +97,30 @@
       "source": "Email Platform",
       "unit": "%",
       "notes": "Two sends: June 11 + June 25. June 11 send is the pre-Ryyu-launch warmup (4 days out). June 25 is the post-launch roundup. Log the average of both sends."
+    },
+    {
+      "entry": "Search Console Clicks \u2014 Last 30 days to May 25, 2026",
+      "metric": "Search Console Clicks",
+      "period": "2026-05-25",
+      "value": 13,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "#",
+      "notes": ""
+    },
+    {
+      "entry": "Blog Sessions \u2014 Last 30 days to May 25, 2026",
+      "metric": "Blog Sessions",
+      "period": "2026-05-25",
+      "value": 48,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "sessions",
+      "notes": ""
     },
     {
       "entry": "Search Console Clicks \u2014 Last 30 days to May 21, 2026",
