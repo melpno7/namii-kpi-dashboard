@@ -1,7 +1,31 @@
 {
-  "generated_at": "2026-06-22T15:05:30.638742Z",
-  "entry_count": 62,
+  "generated_at": "2026-06-29T13:51:50.256159Z",
+  "entry_count": 64,
   "entries": [
+    {
+      "entry": "Search Console Clicks \u2014 Last 30 days to Jun 29, 2026",
+      "metric": "Search Console Clicks",
+      "period": "2026-06-29",
+      "value": 6,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "#",
+      "notes": ""
+    },
+    {
+      "entry": "Blog Sessions \u2014 Last 30 days to Jun 29, 2026",
+      "metric": "Blog Sessions",
+      "period": "2026-06-29",
+      "value": 43,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "sessions",
+      "notes": ""
+    },
     {
       "entry": "Search Console Clicks \u2014 Last 30 days to Jun 22, 2026",
       "metric": "Search Console Clicks",
