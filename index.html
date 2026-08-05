@@ -201,7 +201,7 @@
 // Data loaded from data.json (generated weekly by GitHub Actions)
 const DATA_URL = './data.json';
 
-const CYCLE = {
+let CYCLE = {
   month: 'May 2026',
   focus: 'Pre-launch ramp + lead magnet warmup',
   anchor: 'Brand Alignment Diagnostic ships May 27 · Ryyu beta signup runway',
@@ -211,7 +211,7 @@ const CYCLE = {
   pillars: { LinkedIn: 12, Instagram: 8, Blog: 4, Email: 3, Newsletter: 2, Other: 1 },
 };
 
-const GOALS = [
+let GOALS = [
   { icon: '📞', short: 'Strategy Calls',    title: 'Book 4 inbound strategy calls',                target: 4,  unit: 'calls',    actual: 0,    status: 'Pending', note: 'Calendly now connected. Re-sync to pull live.' },
   { icon: '🎤', short: 'Voice Convos',      title: 'Generate 2 Ryyu Voice conversations',          target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', note: 'ICP: Founders/CEOs at Series A–C' },
   { icon: '⚙️', short: 'Engine Convos',     title: 'Generate 2 Ryyu Engine conversations',         target: 2,  unit: 'convos',  actual: 0,    status: 'Pending', note: 'ICP: CMOs at Series A–C' },
@@ -275,11 +275,30 @@ Chart.defaults.color = '#6b6b66';
 // ════════════════════════════════════════════════════════
 // DATA FETCH — reads data.json built by GitHub Actions
 // ════════════════════════════════════════════════════════
-async function fetchKpiEntries() {
+async function fetchDashboardData() {
   const resp = await fetch(DATA_URL + '?t=' + Date.now());
   if (!resp.ok) throw new Error(`data.json fetch ${resp.status}`);
-  const data = await resp.json();
-  return data.entries || [];
+  return await resp.json();
+}
+
+// Overwrite the built-in fallbacks with whatever Notion last published.
+function applyNotionCycle(data) {
+  if (data && data.cycle && data.cycle.month) {
+    const c = data.cycle;
+    CYCLE = {
+      month: c.month,
+      focus: c.focus || '',
+      anchor: c.anchor || '',
+      start: c.start,
+      end: c.end,
+      totalPieces: c.totalPieces || 0,
+      pillars: c.pillars || CYCLE.pillars,
+      approval: c.approval || '',
+    };
+  }
+  if (data && Array.isArray(data.goals) && data.goals.length) {
+    GOALS = data.goals;
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -353,17 +372,17 @@ function render(metrics, recentEntries, lastSyncLabel, nextSyncLabel) {
   const elapsedDays = Math.max(0, Math.min(totalDays, daysBetween(CYCLE.start, today) + 1));
   const elapsedPct = Math.max(0, Math.min(1, elapsedDays / totalDays));
   const counts = { 'On Track': 0, 'At Risk': 0, 'Off Track': 0, 'Pending': 0 };
-  GOALS.forEach(g => counts[g.status]++);
+  GOALS.forEach(g => { if (counts[g.status] == null) counts[g.status] = 0; counts[g.status]++; });
   const totalPlanned = sum(Object.values(CYCLE.pillars));
 
   return `
     <div class="sync-banner">
       <div class="sync-left">
         <span><span class="sync-pulse"></span><b>Live data:</b> Notion KPI Tracker</span>
-        <span><b>Last fetched:</b> ${escapeHtml(lastSyncLabel)}</span>
-        <span><b>Script auto-sync:</b> ${escapeHtml(nextSyncLabel)}</span>
+        <span><b>Data generated:</b> ${escapeHtml(lastSyncLabel)}</span>
+        <span><b>Next auto-sync:</b> ${escapeHtml(nextSyncLabel)}</span>
       </div>
-      <span class="sync-cta">Say "run Step 03" to refresh</span>
+      <span class="sync-cta">${CYCLE.approval && CYCLE.approval !== 'Approved' ? escapeHtml(CYCLE.approval) + ' — Gate 1 not passed' : 'Auto-syncs Mondays 9:30 AM UTC'}</span>
     </div>
 
     <div class="hero">
@@ -530,9 +549,14 @@ function render(metrics, recentEntries, lastSyncLabel, nextSyncLabel) {
 }
 
 function renderGoal(g, elapsedPct) {
-  const style = STYLE[g.status];
+  const style = STYLE[g.status] || STYLE['Pending'];
   const pct = (g.target && g.actual != null) ? Math.min(100, (g.actual / g.target) * 100) : 0;
   const display = g.actual == null ? '—' : (g.unit === '%' ? g.actual + '%' : g.actual);
+  // Notion stores Target as free text ('60', '15% (sustained)', '<= prior cycle').
+  // Show the parsed number when there is one, otherwise the raw phrase.
+  const targetLabel = g.target != null
+    ? 'of ' + g.target + (g.unit === '%' ? '%' : (g.unit ? ' ' + g.unit : ''))
+    : (g.targetText ? escapeHtml(g.targetText) : 'no target set');
   let projection = '';
   if (g.actual != null && g.target != null && elapsedPct > 0.05 && g.actual > 0) {
     const projected = g.actual / elapsedPct;
@@ -548,7 +572,7 @@ function renderGoal(g, elapsedPct) {
     <div class="goal-name">${escapeHtml(g.short)}</div>
     <div class="goal-big">
       <span class="goal-big-num">${display}</span>
-      <span class="goal-big-target">of ${g.target}${g.unit === '%' ? '%' : ' ' + g.unit}</span>
+      <span class="goal-big-target">${targetLabel}</span>
     </div>
     <div class="goal-progress">
       <div class="goal-progress-bar"><div class="goal-progress-fill" style="width: ${pct}%; background: ${style.color};"></div></div>
@@ -653,20 +677,28 @@ function drawCharts(elapsedPct) {
 // ════════════════════════════════════════════════════════
 async function main() {
   const now = new Date();
-  const lastSyncLabel = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' today';
   const nextSyncLabel = fmtSyncDate(nextMonday9am(now)) + ' · 9:30 AM UTC';
 
   let metrics, recentEntries;
+  let lastSyncLabel = 'unknown';
 
   try {
-    const entries = await fetchKpiEntries();
+    const data = await fetchDashboardData();
+    applyNotionCycle(data);
+    const entries = data.entries || [];
     metrics = buildMetrics(entries);
     recentEntries = buildRecentEntries(entries);
+    // Show when the data was generated, not when the page happened to load.
+    if (data.generated_at) {
+      const g = new Date(data.generated_at);
+      lastSyncLabel = g.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+        + ' · ' + g.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    }
   } catch (err) {
-    console.error('Notion fetch failed:', err);
-    // Fallback to static data if Notion unreachable
+    console.error('data.json fetch failed:', err);
     metrics = Object.entries(METRIC_BASELINES).map(([name, base]) => ({ name, ...base, now: null, liveNote: 'Could not load live data' }));
     recentEntries = [];
+    lastSyncLabel = 'fetch failed';
   }
 
   const today = now.toISOString().slice(0, 10);
