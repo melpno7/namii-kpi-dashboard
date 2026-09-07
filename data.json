@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-31T17:12:09.367456Z",
-  "entry_count": 82,
+  "generated_at": "2026-09-07T15:10:08.391969Z",
+  "entry_count": 84,
   "cycle": {
     "month": "August 2026",
     "focus": "Ryyu launch + AEO alignment",
@@ -91,6 +91,30 @@
     }
   ],
   "entries": [
+    {
+      "entry": "Search Console Clicks \u2014 Last 30 days to Sep 07, 2026",
+      "metric": "Search Console Clicks",
+      "period": "2026-09-07",
+      "value": 11,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "#",
+      "notes": ""
+    },
+    {
+      "entry": "Blog Sessions \u2014 Last 30 days to Sep 07, 2026",
+      "metric": "Blog Sessions",
+      "period": "2026-09-07",
+      "value": 137,
+      "target": null,
+      "status": "",
+      "channel": "Blog",
+      "source": "Website Analytics",
+      "unit": "sessions",
+      "notes": ""
+    },
     {
       "entry": "Search Console Clicks \u2014 Last 30 days to Aug 31, 2026",
       "metric": "Search Console Clicks",
